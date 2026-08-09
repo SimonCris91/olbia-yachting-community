@@ -423,7 +423,7 @@ export default function Home() {
         </article>
 
         {(accountType === "private" || accountType === "company" || accountType === "owner") && <article className="panel shopping-panel">
-          <div className="panel-head"><div><span className="eyebrow">LISTA ACQUISTI</span><h2>Prodotti da ordinare</h2></div><span className="count">{purchases.filter((item) => !item.done).length}</span></div>
+          <div className="panel-head"><div><span className="eyebrow">LISTA ACQUISTI</span><h2>Prodotti da riordinare</h2></div><div className="panel-actions"><span className="count">{purchases.filter((item) => !item.done).length}</span><button className="text-button" onClick={() => openForm("purchase")}>+ Aggiungi</button></div></div>
           {!purchases.length && <div className="empty-state"><b>Lista acquisti vuota</b><span>Aggiungi il primo prodotto o chiedi alla chat di cercarlo.</span><button onClick={() => openForm("purchase")}>Aggiungi prodotto</button></div>}
           {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done: !product.done } : product))} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
           <button className="buy-button" onClick={() => notify("Confronto prezzi avviato sui portali nautici")}>Confronta prezzi e disponibilita</button>
