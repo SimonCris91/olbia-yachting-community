@@ -13,6 +13,7 @@ type CommunityRequest = { id: number; ownerId: string; title: string; details: s
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance: string; rating: string; response: string; premium: boolean; tags: string[]; note: string };
 type ServiceCategory = { name: string; icon: string };
 type InstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
+type Language = "it" | "en" | "fr" | "es" | "de";
 
 const locationData: Record<LocationKey, { weather: string; sea: string; services: ServiceCategory[] }> = {
   Olbia: {
@@ -138,7 +139,7 @@ export default function Home() {
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [profileName, setProfileName] = useState("");
-  const [language, setLanguage] = useState<"it" | "en">("it");
+  const [language, setLanguage] = useState<Language>("it");
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
@@ -151,9 +152,11 @@ export default function Home() {
 
   useEffect(() => {
     const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
+    const savedLanguage = localStorage.getItem("yachting-assistant-language") as Language | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
     const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
+    if (savedLanguage && ["it", "en", "fr", "es", "de"].includes(savedLanguage)) setLanguage(savedLanguage);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
     if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
   }, []);
@@ -161,6 +164,7 @@ export default function Home() {
   useEffect(() => { localStorage.setItem("yachting-assistant-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
+  useEffect(() => { localStorage.setItem("yachting-assistant-language", language); document.documentElement.lang = language; }, [language]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -434,7 +438,8 @@ export default function Home() {
     setChatLoading(true);
     setChatStatus("Sto ragionando...");
     try {
-      const data = await postChat({ message: `Rispondi in ${language === "en" ? "inglese" : "italiano"}. Localita attuale: ${location}. ${text}` });
+      const languageName = ({ it: "italiano", en: "inglese", fr: "francese", es: "spagnolo", de: "tedesco" } as const)[language];
+      const data = await postChat({ message: `Rispondi in ${languageName}. Localita attuale: ${location}. ${text}` });
       setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? "Non ho trovato una risposta utile.", sources: data.sources }]);
     } catch (error) {
       const text = error instanceof Error && error.name === "AbortError" ? "La risposta sta impiegando troppo tempo. Riprova con una domanda piu breve." : error instanceof Error ? error.message : "Non riesco a collegarmi al servizio.";
@@ -467,7 +472,7 @@ export default function Home() {
           </div>
           <button className="download-app" onClick={installApp}>Scarica app</button>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
-          <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as "it" | "en")} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option></select>
+          <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
           <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>{profileName.slice(0, 2).toUpperCase()}</button>
         </div>
       </header>
