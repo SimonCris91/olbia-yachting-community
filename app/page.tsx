@@ -454,14 +454,14 @@ export default function Home() {
     if (window.confirm("Vuoi scaricare Barcaora AI per Android?")) window.location.href = "/downloads/Barcaora-AI-Android.apk";
   };
 
-  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Accesso protetto: le tue liste non sono visibili agli altri utenti.</small></div></main>;
+  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Accesso protetto: le tue liste non sono visibili agli altri utenti.</small></div></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
       <header className="topbar">
         <button className="brand" onClick={() => goTo("home")} aria-label="Torna alla home">
-          <img className="brand-logo" src="/yachting-community-logo.png" alt="Logo Barcaora AI" /><span>Barcaora <b>AI</b><small>Your AI Yachting Assistant</small></span>
+          <img className="brand-logo" src="/barcaora-logo.png" alt="Logo Barcaora AI" /><span>Barcaora <b>AI</b><small>Your AI Yachting Assistant</small></span>
         </button>
         <div className="top-actions">
           <div className="location-wrap">

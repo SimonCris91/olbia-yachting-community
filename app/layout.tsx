@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Barcaora AI - Your AI Yachting Assistant",
   description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione.",
   manifest: "/manifest.webmanifest",
+  icons: { icon: "/barcaora-logo.png", apple: "/barcaora-logo.png" },
   themeColor: "#09283b",
 };
 
