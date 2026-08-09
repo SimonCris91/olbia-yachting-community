@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "home" | "agenda" | "scan" | "community" | "profile";
 type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
-type AccountType = "private" | "operator" | "company";
+type AccountType = "private" | "operator" | "company" | "owner";
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
@@ -127,7 +127,7 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [chat, setChat] = useState(false);
   const [plan, setPlan] = useState<"Standard" | "Premium">("Standard");
-  const [accountType, setAccountType] = useState<AccountType>("private");
+  const [accountType, setAccountType] = useState<AccountType>("owner");
   const [location, setLocation] = useState<LocationKey>("Olbia");
   const [yardOpen, setYardOpen] = useState(false);
   const [chatText, setChatText] = useState("");
@@ -157,7 +157,7 @@ export default function Home() {
     if (savedRequests) setCommunityRequests(JSON.parse(savedRequests));
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
-    if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company") setAccountType(savedAccountType);
+    if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
   }, []);
 
   useEffect(() => { localStorage.setItem("marinaio-tasks", JSON.stringify(tasks)); }, [tasks]);
@@ -356,13 +356,7 @@ export default function Home() {
   };
 
   const installApp = async () => {
-    if (installPromptRef.current) {
-      await installPromptRef.current.prompt();
-      const choice = await installPromptRef.current.userChoice;
-      if (choice.outcome === "accepted") installPromptRef.current = null;
-      return;
-    }
-    notify("Per installarla, usa il menu del browser e scegli Aggiungi a schermata Home");
+    if (window.confirm("Vuoi scaricare Yacht Master per Android?")) window.location.href = "/downloads/Yacht-Master-Android.apk";
   };
 
   return (
@@ -427,23 +421,35 @@ export default function Home() {
           <button className="full-link" onClick={() => notify("Agenda completa in arrivo")}>Vedi tutte le mansioni <span>-&gt;</span></button>
         </article>
 
-        <article className="panel shopping-panel">
+        {(accountType === "private" || accountType === "company" || accountType === "owner") && <article className="panel shopping-panel">
           <div className="panel-head"><div><span className="eyebrow">LISTA ACQUISTI</span><h2>Prodotti da ordinare</h2></div><span className="count">{purchases.filter((item) => !item.done).length}</span></div>
           {!purchases.length && <div className="empty-state"><b>Lista acquisti vuota</b><span>Aggiungi il primo prodotto o chiedi alla chat di cercarlo.</span><button onClick={() => openForm("purchase")}>Aggiungi prodotto</button></div>}
           {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done: !product.done } : product))} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
           <button className="buy-button" onClick={() => notify("Confronto prezzi avviato sui portali nautici")}>Confronta prezzi e disponibilita</button>
-        </article>
+        </article>}
+      </section>
+
+      <section className="access-areas" data-section="agenda">
+        <span className="eyebrow">AREE DEL TUO ACCESSO</span>
+        <h2>{accountType === "owner" ? "Controllo completo" : accountType === "company" ? "Gestione ditta" : accountType === "operator" ? "Spazio operatore" : "Spazio privato"}</h2>
+        <div>
+          {(accountType === "operator" || accountType === "company" || accountType === "owner") && <button onClick={() => goTo("community")}><b>Lavorazioni</b><span>Interventi aperti e presi in carico</span></button>}
+          {(accountType === "company" || accountType === "owner") && <button onClick={() => goTo("agenda")}><b>Ordini</b><span>Materiali, ricambi e fornitori</span></button>}
+          {(accountType === "company" || accountType === "owner") && <button onClick={() => setYardOpen(true)}><b>Commesse</b><span>Barche, squadre e avanzamento</span></button>}
+          {(accountType === "private" || accountType === "owner") && <button onClick={() => goTo("community")}><b>Le mie richieste</b><span>Assistenza e interventi richiesti</span></button>}
+        </div>
       </section>
 
       <section className="community" data-section="community" id="community">
         <div className="community-copy">
           <span className="eyebrow light">RETE INTERVENTI - {location.toUpperCase()}</span>
           <h2>{location} Yachting Community</h2>
-          <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : "Accesso ditta associata: vedi il flusso operativo della zona e puoi prendere in carico gli interventi."}</p>
+          <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
           <div className="community-access">
             <button className={accountType === "private" ? "active" : ""} onClick={() => setAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
             <button className={accountType === "operator" ? "active" : ""} onClick={() => setAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
             <button className={accountType === "company" ? "active" : ""} onClick={() => setAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
+            <button className={accountType === "owner" ? "active" : ""} onClick={() => setAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>
           </div>
           <button className="publish-job" onClick={() => openForm("request")}>+ Pubblica una richiesta</button>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
@@ -470,10 +476,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="yard-strip">
+      {(accountType === "company" || accountType === "owner") && <section className="yard-strip">
         <div><span className="eyebrow">MODALITA CANTIERE</span><h2>Ogni commessa sotto controllo.</h2><p>Imbarcazioni, squadre, attivita, materiali e avanzamento in un unico spazio condiviso.</p></div>
         <button onClick={() => setYardOpen(true)}>Apri area cantieri</button>
-      </section>
+      </section>}
 
       <section className="plans" data-section="profile" id="plans">
         <div className="plans-intro"><span className="eyebrow">PIANI METAYACHTING AI</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>

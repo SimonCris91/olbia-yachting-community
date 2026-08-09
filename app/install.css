@@ -9,7 +9,14 @@
   white-space: nowrap;
 }
 
+.access-areas { max-width: 1132px; margin: 0 auto 52px; padding: 0 24px; }
+.access-areas h2 { font-family: Georgia, serif; font-size: 34px; font-weight: 500; margin: 8px 0 18px; }
+.access-areas > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.access-areas button { border: 1px solid var(--line); border-radius: 15px; background: #fff; padding: 18px; text-align: left; color: var(--ink); display: flex; flex-direction: column; gap: 7px; }
+.access-areas button span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
 @media (max-width: 800px) {
+  .access-areas > div { grid-template-columns: 1fr 1fr; }
   .download-app {
     position: fixed;
     right: 16px;
