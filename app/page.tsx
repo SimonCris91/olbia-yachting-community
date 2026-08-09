@@ -451,7 +451,7 @@ export default function Home() {
   };
 
   const installApp = async () => {
-    if (window.confirm("Vuoi scaricare Barcaora AI per Android?")) window.location.href = "/downloads/Barcaora-AI-Android.apk";
+    notify("L'APK Barcaora AI è in preparazione. Per ora puoi installare la web app dal menu del browser.");
   };
 
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
