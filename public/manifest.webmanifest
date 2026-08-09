@@ -1,6 +1,6 @@
 {
-  "name": "Yachting Assistant - The AI Yachting Assistant",
-  "short_name": "Yachting Assistant",
+  "name": "Barcaora AI - Your AI Yachting Assistant",
+  "short_name": "Barcaora AI",
   "description": "Assistente nautico per diagnosi, ricambi, operatori e lavori di bordo.",
   "start_url": "/",
   "display": "standalone",
