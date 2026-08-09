@@ -1,6 +1,6 @@
 {
-  "name": "MARINAIO AI - Your AI Yachting Assistant",
-  "short_name": "MARINAIO AI",
+  "name": "Yachting Assistant - The AI Yachting Assistant",
+  "short_name": "Yachting Assistant",
   "description": "Assistente nautico per diagnosi, ricambi, operatori e lavori di bordo.",
   "start_url": "/",
   "display": "standalone",
