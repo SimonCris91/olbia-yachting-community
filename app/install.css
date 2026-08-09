@@ -9,6 +9,15 @@
   white-space: nowrap;
 }
 
+.hero-download {
+  border: 0;
+  border-radius: 12px;
+  padding: 13px 18px;
+  background: var(--aqua);
+  color: #fff;
+  font-weight: 800;
+}
+
 .access-areas { max-width: 1132px; margin: 0 auto 52px; padding: 0 24px; }
 .access-areas h2 { font-family: Georgia, serif; font-size: 34px; font-weight: 500; margin: 8px 0 18px; }
 .access-areas > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }

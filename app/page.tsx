@@ -391,6 +391,7 @@ export default function Home() {
           <span className="eyebrow">BUONGIORNO, SIMON</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
           <p>Identifica, trova e organizza. Yacht Master ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
+          <button className="hero-download" onClick={installApp}>Scarica APK Android</button>
         </div>
         <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
       </section>
