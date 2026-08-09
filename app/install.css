@@ -27,12 +27,44 @@
 .access-areas button span { color: var(--muted); font-size: 12px; line-height: 1.4; }
 
 @media (max-width: 800px) {
+  .topbar { height: 64px; padding: 0 10px; gap: 8px; }
+  .brand { min-width: 0; gap: 6px; flex: 1 1 auto; }
+  .brand-logo { width: 34px; height: 34px; flex: 0 0 34px; }
+  .brand > span:last-child { font-size: 0; white-space: nowrap; }
+  .brand > span:last-child::after { content: "YC AI"; font-size: 14px; }
+  .top-actions { gap: 6px; flex: 0 0 auto; }
+  .top-actions .plan-badge, .top-actions .avatar { display: none; }
+  .location-wrap { min-width: 0; max-width: 112px; }
+  .location-select { font-size: 11px; }
   .access-areas > div { grid-template-columns: 1fr 1fr; }
   .download-app {
-    position: fixed;
-    right: 16px;
-    bottom: 146px;
-    z-index: 23;
-    box-shadow: 0 9px 24px rgba(9, 40, 59, .24);
+    position: static;
+    padding: 9px 10px;
+    font-size: 11px;
   }
+  .hero-download { width: 100%; margin-top: 6px; }
+  .panel-head { align-items: flex-start; gap: 12px; }
+  .panel-actions { display: flex; align-items: center; gap: 9px; }
+  .access-areas { padding: 0 16px; margin-bottom: 35px; }
+  .access-areas h2 { font-size: 30px; }
+  .access-areas button { padding: 15px; min-height: 98px; }
+  .purchase { grid-template-columns: 42px minmax(0, 1fr) auto; gap: 9px; }
+  .product-img { width: 42px; height: 42px; }
+  .purchase strong { font-size: 11px; }
+  .community-access { grid-template-columns: 1fr 1fr; }
+  .community-access button { width: 100%; margin-top: 0; }
+  .operator-head { align-items: flex-start; gap: 12px; }
+  .operator-head-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .source-list a { overflow-wrap: anywhere; }
+  .yard-modal, .entry-modal { width: calc(100vw - 28px); max-height: calc(100vh - 110px); overflow: auto; }
+  .chat { width: calc(100vw - 24px); right: 12px; bottom: 142px; }
+  .chat-fab { right: 16px; }
+  .bottom-nav { padding-bottom: max(env(safe-area-inset-bottom), 5px); }
 }
+
+@media (max-width: 360px) {
+  .location-wrap { display: none; }
+  .brand > span:last-child::after { content: "YC"; }
+  .access-areas > div { grid-template-columns: 1fr; }
+  .bottom-nav button { font-size: 9px; }
+  }
