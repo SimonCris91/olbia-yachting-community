@@ -363,7 +363,7 @@ export default function Home() {
     <main className={`app-shell tab-${tab}`}>
       <header className="topbar">
         <button className="brand" onClick={() => goTo("home")} aria-label="Torna alla home">
-          <span className="brand-mark">M</span><span>MetaYachting <b>AI</b></span>
+          <img className="brand-logo" src="/yachting-community-logo.png" alt="Logo Yachting Community AI" /><span>Yachting Community <b>AI</b></span>
         </button>
         <div className="top-actions">
           <div className="location-wrap">
