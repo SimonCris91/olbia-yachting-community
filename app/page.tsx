@@ -7,7 +7,7 @@ type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alg
 type AccountType = "private" | "operator" | "company";
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
-type Message = { id: number; role: "user" | "assistant"; text: string; sources?: { title: string; url: string }[] };
+type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
 type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance: string; rating: string; response: string; premium: boolean; tags: string[]; note: string };
@@ -226,6 +226,32 @@ export default function Home() {
     setFormMode("request");
   };
 
+  const readImageFile = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Impossibile leggere la foto"));
+    reader.readAsDataURL(file);
+  });
+
+  const identifyPhoto = async (file?: File) => {
+    if (!file) return;
+    setChat(true);
+    setChatLoading(true);
+    try {
+      const image = await readImageFile(file);
+      const prompt = `Localita attuale: ${location}. Analizza questa foto scattata a bordo o in cantiere. Identifica il componente nautico se possibile, leggi marca/codice visibile, spiega a cosa serve e suggerisci cosa cercare online o quale operatore chiamare.`;
+      setMessages((items) => [...items, { id: Date.now(), role: "user", text: "Foto caricata per identificazione nautica", image }]);
+      const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: prompt, image }) });
+      const data = await response.json() as { reply?: string; error?: string; sources?: { title: string; url: string }[] };
+      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? `Errore: ${data.error ?? "identificazione non disponibile"}`, sources: data.sources }]);
+    } catch {
+      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: "Non riesco a leggere o inviare la foto. Prova con un'immagine piu piccola o piu nitida." }]);
+    } finally {
+      setChatLoading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   const verifyOperatorsOnWeb = async () => {
     const category = operatorCategory ?? "operatori nautici";
     setWebLoading(true);
@@ -304,7 +330,7 @@ export default function Home() {
 
       <section className="quick-grid" data-section="home" aria-label="Azioni rapide">
         <button className="quick primary" onClick={() => fileRef.current?.click()}><span className="quick-icon">O</span><b>Scatta una foto</b><small>Identifica un componente</small><i>-&gt;</i></button>
-        <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={() => notify("Foto acquisita: avvio identificazione AI")} />
+        <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={(event) => identifyPhoto(event.target.files?.[0])} />
         <button className="quick" onClick={() => setChat(true)}><span className="quick-icon">Q</span><b>Cerca un prodotto</b><small>Ricambi e accessori</small><i>-&gt;</i></button>
         <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Trova un professionista</b><small>Servizi a {location}</small><i>-&gt;</i></button>
       </section>
@@ -387,7 +413,7 @@ export default function Home() {
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri assistente">AI</button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}><RichText text={message.text} />{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> Sto cercando prodotti e fonti...</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> Sto analizzando la foto e verificando eventuali fonti...</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">MARINAIO AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
