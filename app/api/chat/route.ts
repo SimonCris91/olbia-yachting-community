@@ -1,3 +1,16 @@
+import { env } from "cloudflare:workers";
+
+async function consumeQuota(request: Request) {
+  const userId = request.headers.get("oai-authenticated-user-id");
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const subject = userId ? `user:${userId}` : `anon:${ip}`;
+  const limit = userId ? 100 : 20;
+  const day = new Date().toISOString().slice(0, 10);
+  await env.DB.prepare("INSERT INTO ai_usage (subject, day, requests) VALUES (?, ?, 1) ON CONFLICT(subject, day) DO UPDATE SET requests = requests + 1, updated_at = CURRENT_TIMESTAMP").bind(subject, day).run();
+  const row = await env.DB.prepare("SELECT requests FROM ai_usage WHERE subject = ? AND day = ?").bind(subject, day).first<{ requests: number }>();
+  return { allowed: (row?.requests ?? limit + 1) <= limit, limit };
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -12,6 +25,9 @@ export async function POST(request: Request) {
     if (image && (!/^data:image\/(jpeg|png|webp);base64,/i.test(image) || image.length > 8_000_000)) {
       return Response.json({ error: "Formato o dimensione immagine non supportati" }, { status: 400 });
     }
+
+    const quota = await consumeQuota(request);
+    if (!quota.allowed) return Response.json({ error: `Limite giornaliero raggiunto (${quota.limit}). Accedi per una quota maggiore.` }, { status: 429 });
 
     const input = image
       ? [{
