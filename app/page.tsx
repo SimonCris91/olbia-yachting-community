@@ -131,6 +131,7 @@ export default function Home() {
   const [yardOpen, setYardOpen] = useState(false);
   const [chatText, setChatText] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatStatus, setChatStatus] = useState("");
   const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao Simon. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
@@ -226,28 +227,62 @@ export default function Home() {
     setFormMode("request");
   };
 
-  const readImageFile = (file: File) => new Promise<string>((resolve, reject) => {
+  const messageListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight, behavior: "smooth" }); }, [messages, chatLoading]);
+
+  const compressImageFile = (file: File) => new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error("Impossibile leggere la foto"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Formato immagine non leggibile"));
+      image.onload = () => {
+        const maxSide = 1400;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) return reject(new Error("Impossibile preparare la foto"));
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.src = String(reader.result);
+    };
     reader.readAsDataURL(file);
   });
+
+  const postChat = async (payload: { message: string; image?: string }) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45000);
+    try {
+      const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: controller.signal });
+      const data = await response.json() as { reply?: string; error?: string; sources?: { title: string; url: string }[] };
+      if (!response.ok) throw new Error(data.error ?? "Risposta non disponibile");
+      return data;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  };
 
   const identifyPhoto = async (file?: File) => {
     if (!file) return;
     setChat(true);
     setChatLoading(true);
+    setChatStatus("Preparo la foto...");
     try {
-      const image = await readImageFile(file);
+      const image = await compressImageFile(file);
       const prompt = `Localita attuale: ${location}. Analizza questa foto scattata a bordo o in cantiere. Identifica il componente nautico se possibile, leggi marca/codice visibile, spiega a cosa serve e suggerisci cosa cercare online o quale operatore chiamare.`;
       setMessages((items) => [...items, { id: Date.now(), role: "user", text: "Foto caricata per identificazione nautica", image }]);
-      const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: prompt, image }) });
-      const data = await response.json() as { reply?: string; error?: string; sources?: { title: string; url: string }[] };
+      setChatStatus("Analizzo il componente...");
+      const data = await postChat({ message: prompt, image });
       setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? `Errore: ${data.error ?? "identificazione non disponibile"}`, sources: data.sources }]);
-    } catch {
-      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: "Non riesco a leggere o inviare la foto. Prova con un'immagine piu piccola o piu nitida." }]);
+    } catch (error) {
+      const text = error instanceof Error && error.name === "AbortError" ? "La richiesta sta impiegando troppo tempo. Riprova con una foto piu nitida e ravvicinata." : error instanceof Error ? error.message : "Non riesco a leggere o inviare la foto.";
+      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: `${text}\n\nConsiglio: fotografa bene marca, codice e collegamenti, evitando riflessi e distanza eccessiva.` }]);
     } finally {
       setChatLoading(false);
+      setChatStatus("");
       if (fileRef.current) fileRef.current.value = "";
     }
   };
@@ -282,14 +317,16 @@ export default function Home() {
     setMessages((items) => [...items, { id: Date.now(), role: "user", text }]);
     setChatText("");
     setChatLoading(true);
+    setChatStatus("Sto ragionando...");
     try {
-      const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: `Localita attuale: ${location}. ${text}` }) });
-      const data = await response.json() as { reply?: string; error?: string; sources?: { title: string; url: string }[] };
-      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? `Errore: ${data.error ?? "risposta non disponibile"}`, sources: data.sources }]);
-    } catch {
-      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: "Non riesco a collegarmi al servizio. Riprova tra poco." }]);
+      const data = await postChat({ message: `Localita attuale: ${location}. ${text}` });
+      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? "Non ho trovato una risposta utile.", sources: data.sources }]);
+    } catch (error) {
+      const text = error instanceof Error && error.name === "AbortError" ? "La risposta sta impiegando troppo tempo. Riprova con una domanda piu breve." : error instanceof Error ? error.message : "Non riesco a collegarmi al servizio.";
+      setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text }]);
     } finally {
       setChatLoading(false);
+      setChatStatus("");
     }
   };
 
@@ -413,7 +450,7 @@ export default function Home() {
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri assistente">AI</button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> Sto analizzando la foto e verificando eventuali fonti...</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">MARINAIO AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}

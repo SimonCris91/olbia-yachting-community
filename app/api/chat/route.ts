@@ -16,12 +16,13 @@ export async function POST(request: Request) {
         }]
       : message!.trim();
 
+    const shouldUseWeb = !image && /prezz|disponibil|fonte|web|online|azienda|operatore|elettricista|meccanico|ricambio|comprare|acquist/i.test(message ?? "");
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-5.6-terra",
-        tools: [{ type: "web_search" }],
+        ...(shouldUseWeb ? { tools: [{ type: "web_search" }] } : {}),
         instructions: "Sei Marinaio AI, assistente nautico italiano per armatori, comandanti e cantieri. Aiuta a identificare ricambi, prodotti, componenti fotografati e professionisti. Quando ricevi una foto: descrivi cosa si vede, indica marca/codice se leggibili, spiega a cosa serve, segnala incertezze, suggerisci controlli pratici e parole chiave per cercare il ricambio. Usa la ricerca web solo quando serve verificare codici, prodotti, prezzi o aziende reali e cita fonti affidabili. Non inventare compatibilita, prezzi, numeri di telefono o disponibilita. Per sicurezza, invita a consultare un tecnico qualificato quando il problema puo comportare rischi. Rispondi in italiano in modo pratico e conciso. L'interfaccia e mobile: non usare tabelle Markdown.",
         input,
       }),
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
     const sources = Array.from(new Map(contents.flatMap((item) => item.annotations ?? []).filter((item) => item.url).map((item) => [item.url!, { url: item.url!, title: item.title ?? "Fonte" }])).values());
 
     return Response.json({ reply: text || "Non ho trovato una risposta utile.", sources: sources.slice(0, 5) });
-  } catch {
-    return Response.json({ error: "Impossibile contattare Marinaio AI" }, { status: 500 });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Impossibile contattare Marinaio AI" }, { status: 500 });
   }
 }
