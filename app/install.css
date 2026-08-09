@@ -10,6 +10,8 @@
 }
 
 .brand-logo { width: 40px; height: 40px; object-fit: contain; }
+.brand > span:last-child { display: flex; flex-direction: column; line-height: 1.05; }
+.brand > span:last-child small { margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 650; letter-spacing: .02em; }
 
 .hero-download {
   border: 0;

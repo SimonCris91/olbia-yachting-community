@@ -14,7 +14,7 @@ import "./install.css";
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Yachting Community AI - Yacht Master",
+  title: "MARINAIO AI - Your AI Yachting Assistant",
   description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione.",
   manifest: "/manifest.webmanifest",
   themeColor: "#09283b",

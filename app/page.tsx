@@ -312,13 +312,13 @@ export default function Home() {
   };
 
   const taskTitleFromMessage = (text: string) => {
-    const firstUsefulLine = text.split("\n").map((line) => line.replace(/^[-*#\s]+/, "").replace(/\*\*/g, "").trim()).find((line) => line.length > 8) ?? "Mansione suggerita da Yacht Master";
+    const firstUsefulLine = text.split("\n").map((line) => line.replace(/^[-*#\s]+/, "").replace(/\*\*/g, "").trim()).find((line) => line.length > 8) ?? "Mansione suggerita da MARINAIO AI";
     return firstUsefulLine.length > 68 ? `${firstUsefulLine.slice(0, 65)}...` : firstUsefulLine;
   };
 
   const addMessageToAgenda = (message: Message) => {
     const title = taskTitleFromMessage(message.text);
-    setTasks((items) => [...items, { id: Date.now(), title, boat: "Suggerita da Yacht Master", due: "Da programmare", priority: "Media", done: false }]);
+    setTasks((items) => [...items, { id: Date.now(), title, boat: "Suggerita da MARINAIO AI", due: "Da programmare", priority: "Media", done: false }]);
     notify("Mansione aggiunta in agenda");
     setChat(false);
     goTo("agenda");
@@ -421,14 +421,14 @@ export default function Home() {
   };
 
   const installApp = async () => {
-    if (window.confirm("Vuoi scaricare Yacht Master per Android?")) window.location.href = "/downloads/Yacht-Master-Android.apk";
+    if (window.confirm("Vuoi scaricare MARINAIO AI per Android?")) window.location.href = "/downloads/MARINAIO-AI-Android.apk";
   };
 
   return (
     <main className={`app-shell tab-${tab}`}>
       <header className="topbar">
         <button className="brand" onClick={() => goTo("home")} aria-label="Torna alla home">
-          <img className="brand-logo" src="/yachting-community-logo.png" alt="Logo Yachting Community AI" /><span>Yachting Community <b>AI</b></span>
+          <img className="brand-logo" src="/yachting-community-logo.png" alt="Logo Marinaio AI" /><span>MARINAIO <b>AI</b><small>Your AI Yachting Assistant</small></span>
         </button>
         <div className="top-actions">
           <div className="location-wrap">
@@ -455,7 +455,7 @@ export default function Home() {
         <div>
           <span className="eyebrow">BUONGIORNO, SIMON</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
-          <p>Identifica, trova e organizza. Yacht Master ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
+          <p>Identifica, trova e organizza. MARINAIO AI ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
           <button className="hero-download" onClick={installApp}>Scarica APK Android</button>
         </div>
         <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
@@ -471,7 +471,7 @@ export default function Home() {
       <section className="scan-page" data-section="scan">
         <span className="eyebrow">RICONOSCIMENTO VISIVO</span>
         <h1>Fotografa il componente.</h1>
-        <p>Inquadra bene marca, codice e collegamenti. Yacht Master analizzerà la foto e potrà cercare ricambi compatibili.</p>
+        <p>Inquadra bene marca, codice e collegamenti. MARINAIO AI analizzerà la foto e potrà cercare ricambi compatibili.</p>
         <button onClick={() => fileRef.current?.click()}><span>O</span> Apri la fotocamera</button>
         <small>Puoi anche scegliere una foto gia presente sul telefono.</small>
       </section>
@@ -509,7 +509,7 @@ export default function Home() {
       <section className="community" data-section="community" id="community">
         <div className="community-copy">
           <span className="eyebrow light">RETE INTERVENTI - {location.toUpperCase()}</span>
-          <h2>{location} Yachting Community</h2>
+          <h2>{location} MARINAIO AI</h2>
           <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
           <div className="community-access">
             <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
@@ -559,7 +559,7 @@ export default function Home() {
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri assistente">AI</button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>YACHT MASTER - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">METAYACHTING AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}

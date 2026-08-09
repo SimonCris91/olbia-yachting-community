@@ -1,6 +1,6 @@
 {
-  "name": "Yachting Community AI - Yacht Master",
-  "short_name": "Yacht Master",
+  "name": "MARINAIO AI - Your AI Yachting Assistant",
+  "short_name": "MARINAIO AI",
   "description": "Assistente nautico per diagnosi, ricambi, operatori e lavori di bordo.",
   "start_url": "/",
   "display": "standalone",
