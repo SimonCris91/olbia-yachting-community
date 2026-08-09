@@ -135,6 +135,7 @@ export default function Home() {
   const [chatStatus, setChatStatus] = useState("");
   const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao Simon. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
+  const [signedIn, setSignedIn] = useState(false);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
@@ -148,13 +149,11 @@ export default function Home() {
   useEffect(() => {
     const savedTasks = localStorage.getItem("marinaio-tasks");
     const savedPurchases = localStorage.getItem("marinaio-purchases");
-    const savedRequests = localStorage.getItem("marinaio-community-requests");
     const savedLocation = localStorage.getItem("marinaio-location") as LocationKey | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
     const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
     if (savedTasks) setTasks(JSON.parse(savedTasks));
     if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
-    if (savedRequests) setCommunityRequests(JSON.parse(savedRequests));
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
     if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
@@ -162,7 +161,6 @@ export default function Home() {
 
   useEffect(() => { localStorage.setItem("marinaio-tasks", JSON.stringify(tasks)); }, [tasks]);
   useEffect(() => { localStorage.setItem("marinaio-purchases", JSON.stringify(purchases)); }, [purchases]);
-  useEffect(() => { localStorage.setItem("marinaio-community-requests", JSON.stringify(communityRequests)); }, [communityRequests]);
   useEffect(() => { localStorage.setItem("marinaio-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
@@ -176,6 +174,31 @@ export default function Home() {
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
   }, []);
+
+  useEffect(() => {
+    const loadSavedRequests = async () => {
+      try {
+        const profileResponse = await fetch("/api/profile");
+        if (!profileResponse.ok) return;
+        setSignedIn(true);
+        const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
+        if (!response.ok) return;
+        const data = await response.json() as { requests?: Array<{ id: number; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted"; acceptedBy?: string; created?: string }> };
+        setCommunityRequests((data.requests ?? []).map((item) => ({
+          id: item.id,
+          ownerId: "me",
+          title: item.title,
+          details: item.details,
+          category: item.category,
+          location: item.location,
+          created: item.created ? new Date(item.created).toLocaleDateString("it-IT") : "Adesso",
+          status: item.status === "accepted" ? "Presa in carico" : "Aperta",
+          acceptedBy: item.acceptedBy,
+        })));
+      } catch { /* La versione locale resta utilizzabile se la rete non è disponibile. */ }
+    };
+    void loadSavedRequests();
+  }, [location]);
 
   const progress = useMemo(() => tasks.length ? Math.round(tasks.filter((task) => task.done).length / tasks.length * 100) : 0, [tasks]);
   const currentLocation = locationData[location];
@@ -207,7 +230,7 @@ export default function Home() {
     notify(`Localita impostata su ${nextLocation}`);
   };
 
-  const submitForm = () => {
+  const submitForm = async () => {
     if (!form.title.trim() || !formMode) return;
     if (formMode === "task") {
       setTasks((items) => [...items, { id: Date.now(), title: form.title.trim(), boat: form.details.trim() || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: false }]);
@@ -216,8 +239,19 @@ export default function Home() {
       setPurchases((items) => [...items, { id: Date.now(), title: form.title.trim(), detail: form.details.trim() || "Da cercare", price: "-", done: false }]);
     }
     if (formMode === "request") {
-      setCommunityRequests((items) => [{ id: Date.now(), ownerId: "me", title: form.title.trim(), details: form.details.trim() || `${location} - Dettagli da concordare`, category: form.category, location, created: "Adesso", status: "Aperta" }, ...items]);
-      notify(`Richiesta inviata agli operatori compatibili a ${location}`);
+      try {
+        const response = await fetch("/api/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: form.title.trim(), details: form.details.trim(), category: form.category, location }) });
+        const data = await response.json() as { request?: CommunityRequest; error?: string; signIn?: string };
+        if (!response.ok) {
+          if (data.signIn) window.location.href = data.signIn;
+          throw new Error(data.error ?? "Impossibile pubblicare la richiesta");
+        }
+        if (data.request) setCommunityRequests((items) => [{ ...data.request!, ownerId: "me", status: "Aperta", created: "Adesso" }, ...items]);
+        notify(`Richiesta inviata agli operatori compatibili a ${location}`);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "Impossibile pubblicare la richiesta");
+        return;
+      }
     }
     setFormMode(null);
   };
@@ -331,9 +365,40 @@ export default function Home() {
     }
   };
 
-  const acceptRequest = (id: number) => {
-    setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Presa in carico", acceptedBy: `Operatore demo ${location}` } : item));
-    notify("Intervento accettato: il richiedente ricevera una notifica");
+  const acceptRequest = async (id: number) => {
+    try {
+      const response = await fetch("/api/requests", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action: "accept" }) });
+      const data = await response.json() as { acceptedBy?: string; error?: string; signIn?: string };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile prendere in carico la richiesta");
+      }
+      setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Presa in carico", acceptedBy: data.acceptedBy ?? "Operatore" } : item));
+      notify("Intervento preso in carico");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile prendere in carico la richiesta");
+    }
+  };
+
+  const changeAccountType = async (nextRole: AccountType) => {
+    if (nextRole === "owner") {
+      setAccountType("owner");
+      notify("Vista titolare attivata su questo dispositivo");
+      return;
+    }
+    try {
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: nextRole }) });
+      const data = await response.json() as { error?: string; signIn?: string };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile aggiornare il ruolo");
+      }
+      setAccountType(nextRole);
+      setSignedIn(true);
+      notify("Ruolo aggiornato");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile aggiornare il ruolo");
+    }
   };
 
   const sendChat = async (preset?: string) => {
@@ -447,11 +512,12 @@ export default function Home() {
           <h2>{location} Yachting Community</h2>
           <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
           <div className="community-access">
-            <button className={accountType === "private" ? "active" : ""} onClick={() => setAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
-            <button className={accountType === "operator" ? "active" : ""} onClick={() => setAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
-            <button className={accountType === "company" ? "active" : ""} onClick={() => setAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
-            <button className={accountType === "owner" ? "active" : ""} onClick={() => setAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>
+            <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
+            <button className={accountType === "operator" ? "active" : ""} onClick={() => void changeAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
+            <button className={accountType === "company" ? "active" : ""} onClick={() => void changeAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
+            <button className={accountType === "owner" ? "active" : ""} onClick={() => void changeAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>
           </div>
+          {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
           <button className="publish-job" onClick={() => openForm("request")}>+ Pubblica una richiesta</button>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
