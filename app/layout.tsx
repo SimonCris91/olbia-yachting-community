@@ -9,12 +9,15 @@ import "./testing.css";
 import "./marketplace.css";
 import "./forms.css";
 import "./sections.css";
+import "./install.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Marinaio AI — Il tuo assistente nautico intelligente",
+  title: "MetaYachting AI - Yacht Master",
   description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione.",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#09283b",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -12,6 +12,7 @@ type WebResult = { reply: string; sources?: { title: string; url: string }[] };
 type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance: string; rating: string; response: string; premium: boolean; tags: string[]; note: string };
 type ServiceCategory = { name: string; icon: string };
+type InstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 const locationData: Record<LocationKey, { weather: string; sea: string; services: ServiceCategory[] }> = {
   Olbia: {
@@ -142,6 +143,7 @@ export default function Home() {
   const [form, setForm] = useState({ title: "", category: "Meccanica", details: "" });
   const [toast, setToast] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const installPromptRef = useRef<InstallPromptEvent | null>(null);
 
   useEffect(() => {
     const savedTasks = localStorage.getItem("marinaio-tasks");
@@ -164,6 +166,16 @@ export default function Home() {
   useEffect(() => { localStorage.setItem("marinaio-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      installPromptRef.current = event as InstallPromptEvent;
+    };
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+  }, []);
 
   const progress = useMemo(() => tasks.length ? Math.round(tasks.filter((task) => task.done).length / tasks.length * 100) : 0, [tasks]);
   const currentLocation = locationData[location];
@@ -266,13 +278,13 @@ export default function Home() {
   };
 
   const taskTitleFromMessage = (text: string) => {
-    const firstUsefulLine = text.split("\n").map((line) => line.replace(/^[-*#\s]+/, "").replace(/\*\*/g, "").trim()).find((line) => line.length > 8) ?? "Mansione suggerita da Marinaio AI";
+    const firstUsefulLine = text.split("\n").map((line) => line.replace(/^[-*#\s]+/, "").replace(/\*\*/g, "").trim()).find((line) => line.length > 8) ?? "Mansione suggerita da Yacht Master";
     return firstUsefulLine.length > 68 ? `${firstUsefulLine.slice(0, 65)}...` : firstUsefulLine;
   };
 
   const addMessageToAgenda = (message: Message) => {
     const title = taskTitleFromMessage(message.text);
-    setTasks((items) => [...items, { id: Date.now(), title, boat: "Suggerita da Marinaio AI", due: "Da programmare", priority: "Media", done: false }]);
+    setTasks((items) => [...items, { id: Date.now(), title, boat: "Suggerita da Yacht Master", due: "Da programmare", priority: "Media", done: false }]);
     notify("Mansione aggiunta in agenda");
     setChat(false);
     goTo("agenda");
@@ -343,11 +355,21 @@ export default function Home() {
     }
   };
 
+  const installApp = async () => {
+    if (installPromptRef.current) {
+      await installPromptRef.current.prompt();
+      const choice = await installPromptRef.current.userChoice;
+      if (choice.outcome === "accepted") installPromptRef.current = null;
+      return;
+    }
+    notify("Per installarla, usa il menu del browser e scegli Aggiungi a schermata Home");
+  };
+
   return (
     <main className={`app-shell tab-${tab}`}>
       <header className="topbar">
         <button className="brand" onClick={() => goTo("home")} aria-label="Torna alla home">
-          <span className="brand-mark">M</span><span>Marinaio <b>AI</b></span>
+          <span className="brand-mark">M</span><span>MetaYachting <b>AI</b></span>
         </button>
         <div className="top-actions">
           <div className="location-wrap">
@@ -356,6 +378,7 @@ export default function Home() {
               {(Object.keys(locationData) as LocationKey[]).map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
+          <button className="download-app" onClick={installApp}>Scarica app</button>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
           <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>SC</button>
         </div>
@@ -373,7 +396,7 @@ export default function Home() {
         <div>
           <span className="eyebrow">BUONGIORNO, SIMON</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
-          <p>Identifica, trova e organizza. Marinaio AI ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
+          <p>Identifica, trova e organizza. Yacht Master ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
         </div>
         <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
       </section>
@@ -388,7 +411,7 @@ export default function Home() {
       <section className="scan-page" data-section="scan">
         <span className="eyebrow">RICONOSCIMENTO VISIVO</span>
         <h1>Fotografa il componente.</h1>
-        <p>Inquadra bene marca, codice e collegamenti. Marinaio AI analizzera la foto e potra cercare ricambi compatibili.</p>
+        <p>Inquadra bene marca, codice e collegamenti. Yacht Master analizzerà la foto e potrà cercare ricambi compatibili.</p>
         <button onClick={() => fileRef.current?.click()}><span>O</span> Apri la fotocamera</button>
         <small>Puoi anche scegliere una foto gia presente sul telefono.</small>
       </section>
@@ -453,7 +476,7 @@ export default function Home() {
       </section>
 
       <section className="plans" data-section="profile" id="plans">
-        <div className="plans-intro"><span className="eyebrow">PIANI MARINAIO AI</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
+        <div className="plans-intro"><span className="eyebrow">PIANI METAYACHTING AI</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
         <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
         <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium attivato in modalita demo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button></div>
       </section>
@@ -463,10 +486,10 @@ export default function Home() {
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri assistente">AI</button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>MARINAIO AI - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>YACHT MASTER - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
-      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">MARINAIO AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
+      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">METAYACHTING AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
 
       {formMode && <div className="modal-backdrop" onClick={() => setFormMode(null)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); submitForm(); }}><button type="button" className="modal-close" onClick={() => setFormMode(null)}>x</button><span className="eyebrow">{formMode === "request" ? "NUOVA RICHIESTA" : formMode === "task" ? "AGENDA DI BORDO" : "LISTA ACQUISTI"}</span><h2>{formMode === "request" ? `Richiedi un intervento a ${location}` : formMode === "task" ? "Aggiungi una mansione" : "Aggiungi un prodotto"}</h2><label><span>{formMode === "request" ? "Intervento richiesto" : formMode === "task" ? "Mansione" : "Prodotto"}</span><input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={formMode === "request" ? "Es. Controllo caricabatterie" : "Inserisci un titolo"} required /></label>{formMode === "request" && <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Meccanica</option><option>Elettrica</option><option>Elettronica</option><option>Refit</option><option>Pulizia</option><option>Altro</option></select></label>}<label><span>{formMode === "request" ? "Barca, marina e urgenza" : "Dettagli facoltativi"}</span><textarea value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder={formMode === "request" ? `Es. Marina di ${location}, M/Y 15 m, entro domani` : "Aggiungi informazioni"} /></label><button className="entry-submit" type="submit">{formMode === "request" ? "Pubblica richiesta" : "Salva"}</button></form></div>}
     </main>

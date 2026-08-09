@@ -1,0 +1,20 @@
+.download-app {
+  border: 0;
+  border-radius: 18px;
+  background: var(--navy);
+  color: #fff;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+  .download-app {
+    position: fixed;
+    right: 16px;
+    bottom: 146px;
+    z-index: 23;
+    box-shadow: 0 9px 24px rgba(9, 40, 59, .24);
+  }
+}
