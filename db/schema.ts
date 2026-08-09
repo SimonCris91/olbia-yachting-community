@@ -30,3 +30,13 @@ export const serviceRequests = sqliteTable("service_requests", {
   acceptedByUserId: text("accepted_by_user_id"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("idx_service_requests_location_status").on(table.location, table.status), index("idx_service_requests_owner").on(table.ownerUserId)]);
+
+export const workspaceItems = sqliteTable("workspace_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerUserId: text("owner_user_id").notNull(),
+  kind: text("kind", { enum: ["task", "purchase"] }).notNull(),
+  title: text("title").notNull(),
+  details: text("details").notNull().default(""),
+  done: integer("done", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_workspace_items_owner_kind").on(table.ownerUserId, table.kind)]);

@@ -133,9 +133,12 @@ export default function Home() {
   const [chatText, setChatText] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatStatus, setChatStatus] = useState("");
-  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao Simon. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
+  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [signedIn, setSignedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [language, setLanguage] = useState<"it" | "en">("it");
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
@@ -147,21 +150,15 @@ export default function Home() {
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
 
   useEffect(() => {
-    const savedTasks = localStorage.getItem("marinaio-tasks");
-    const savedPurchases = localStorage.getItem("marinaio-purchases");
-    const savedLocation = localStorage.getItem("marinaio-location") as LocationKey | null;
+    const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
     const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedPurchases) setPurchases(JSON.parse(savedPurchases));
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
     if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
   }, []);
 
-  useEffect(() => { localStorage.setItem("marinaio-tasks", JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem("marinaio-purchases", JSON.stringify(purchases)); }, [purchases]);
-  useEffect(() => { localStorage.setItem("marinaio-location", location); }, [location]);
+  useEffect(() => { localStorage.setItem("yachting-assistant-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
 
@@ -180,7 +177,17 @@ export default function Home() {
       try {
         const profileResponse = await fetch("/api/profile");
         if (!profileResponse.ok) return;
+        const profileData = await profileResponse.json() as { profile?: { displayName?: string; role?: AccountType } };
         setSignedIn(true);
+        setProfileName(profileData.profile?.displayName ?? "Utente");
+        if (profileData.profile?.role) setAccountType(profileData.profile.role);
+        const workspaceResponse = await fetch("/api/workspace");
+        if (workspaceResponse.ok) {
+          const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase"; title: string; details: string; done: boolean }> };
+          const savedItems = workspaceData.items ?? [];
+          setTasks(savedItems.filter((item) => item.kind === "task").map((item) => ({ id: item.id, title: item.title, boat: item.details || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: item.done })));
+          setPurchases(savedItems.filter((item) => item.kind === "purchase").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Da cercare", price: "-", done: item.done })));
+        }
         const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
         if (!response.ok) return;
         const data = await response.json() as { requests?: Array<{ id: number; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted"; acceptedBy?: string; created?: string }> };
@@ -195,7 +202,8 @@ export default function Home() {
           status: item.status === "accepted" ? "Presa in carico" : "Aperta",
           acceptedBy: item.acceptedBy,
         })));
-      } catch { /* La versione locale resta utilizzabile se la rete non è disponibile. */ }
+      } catch { /* L'accesso viene riproposto quando la rete torna disponibile. */ }
+      finally { setAuthChecked(true); }
     };
     void loadSavedRequests();
   }, [location]);
@@ -230,13 +238,27 @@ export default function Home() {
     notify(`Localita impostata su ${nextLocation}`);
   };
 
+  const saveWorkspaceItem = async (kind: "task" | "purchase", title: string, details: string) => {
+    const response = await fetch("/api/workspace", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, title, details }) });
+    const data = await response.json() as { item?: { id: number; title: string; details: string }; signIn?: string; error?: string };
+    if (!response.ok) { if (data.signIn) window.location.href = data.signIn; throw new Error(data.error ?? "Impossibile salvare"); }
+    return data.item!;
+  };
+
+  const toggleWorkspaceItem = async (id: number, done: boolean) => {
+    const response = await fetch("/api/workspace", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, done }) });
+    if (!response.ok) throw new Error("Impossibile aggiornare l'elemento");
+  };
+
   const submitForm = async () => {
     if (!form.title.trim() || !formMode) return;
     if (formMode === "task") {
-      setTasks((items) => [...items, { id: Date.now(), title: form.title.trim(), boat: form.details.trim() || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: false }]);
+      const item = await saveWorkspaceItem("task", form.title.trim(), form.details.trim() || "La mia imbarcazione");
+      setTasks((items) => [...items, { id: item.id, title: item.title, boat: item.details, due: "Da programmare", priority: "Media", done: false }]);
     }
     if (formMode === "purchase") {
-      setPurchases((items) => [...items, { id: Date.now(), title: form.title.trim(), detail: form.details.trim() || "Da cercare", price: "-", done: false }]);
+      const item = await saveWorkspaceItem("purchase", form.title.trim(), form.details.trim() || "Da cercare");
+      setPurchases((items) => [...items, { id: item.id, title: item.title, detail: item.details, price: "-", done: false }]);
     }
     if (formMode === "request") {
       try {
@@ -316,9 +338,12 @@ export default function Home() {
     return firstUsefulLine.length > 68 ? `${firstUsefulLine.slice(0, 65)}...` : firstUsefulLine;
   };
 
-  const addMessageToAgenda = (message: Message) => {
+  const addMessageToAgenda = async (message: Message) => {
     const title = taskTitleFromMessage(message.text);
-    setTasks((items) => [...items, { id: Date.now(), title, boat: "Suggerita da Yachting Assistant", due: "Da programmare", priority: "Media", done: false }]);
+    try {
+      const item = await saveWorkspaceItem("task", title, "Suggerita da Yachting Assistant");
+      setTasks((items) => [...items, { id: item.id, title: item.title, boat: item.details, due: "Da programmare", priority: "Media", done: false }]);
+    } catch (error) { notify(error instanceof Error ? error.message : "Impossibile salvare la mansione"); return; }
     notify("Mansione aggiunta in agenda");
     setChat(false);
     goTo("agenda");
@@ -409,7 +434,7 @@ export default function Home() {
     setChatLoading(true);
     setChatStatus("Sto ragionando...");
     try {
-      const data = await postChat({ message: `Localita attuale: ${location}. ${text}` });
+      const data = await postChat({ message: `Rispondi in ${language === "en" ? "inglese" : "italiano"}. Localita attuale: ${location}. ${text}` });
       setMessages((items) => [...items, { id: Date.now() + 1, role: "assistant", text: data.reply ?? "Non ho trovato una risposta utile.", sources: data.sources }]);
     } catch (error) {
       const text = error instanceof Error && error.name === "AbortError" ? "La risposta sta impiegando troppo tempo. Riprova con una domanda piu breve." : error instanceof Error ? error.message : "Non riesco a collegarmi al servizio.";
@@ -423,6 +448,9 @@ export default function Home() {
   const installApp = async () => {
     if (window.confirm("Vuoi scaricare Yachting Assistant per Android?")) window.location.href = "/downloads/Yachting-Assistant-Android.apk";
   };
+
+  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt="Yachting Assistant" /><span>YACHTING ASSISTANT</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt="Yachting Assistant" /><span>YACHTING ASSISTANT</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Accesso protetto: le tue liste non sono visibili agli altri utenti.</small></div></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
@@ -439,7 +467,8 @@ export default function Home() {
           </div>
           <button className="download-app" onClick={installApp}>Scarica app</button>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
-          <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>SC</button>
+          <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as "it" | "en")} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option></select>
+          <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>{profileName.slice(0, 2).toUpperCase()}</button>
         </div>
       </header>
 
@@ -482,7 +511,7 @@ export default function Home() {
           <div className="progress-row"><span>Avanzamento di oggi</span><b>{progress}%</b><div className="progress"><i style={{ width: `${progress}%` }} /></div></div>
           <div className="task-list">
             {!tasks.length && <div className="empty-state"><b>Nessuna mansione</b><span>Parti da zero e aggiungi il primo lavoro da svolgere.</span><button onClick={() => openForm("task")}>Aggiungi mansione</button></div>}
-            {tasks.map((task) => <label className={`task ${task.done ? "done" : ""}`} key={task.id}><input type="checkbox" checked={task.done} onChange={() => setTasks((items) => items.map((item) => item.id === task.id ? { ...item, done: !item.done } : item))} /><span className="check">OK</span><span className="task-copy"><b>{task.title}</b><small>{task.boat}</small></span><span className={`priority ${task.priority.toLowerCase()}`}>{task.done ? "Completata" : task.due}</span></label>)}
+            {tasks.map((task) => <label className={`task ${task.done ? "done" : ""}`} key={task.id}><input type="checkbox" checked={task.done} onChange={() => { const done = !task.done; setTasks((items) => items.map((item) => item.id === task.id ? { ...item, done } : item)); void toggleWorkspaceItem(task.id, done).catch(() => notify("Impossibile aggiornare la mansione")); }} /><span className="check">OK</span><span className="task-copy"><b>{task.title}</b><small>{task.boat}</small></span><span className={`priority ${task.priority.toLowerCase()}`}>{task.done ? "Completata" : task.due}</span></label>)}
           </div>
           <button className="full-link" onClick={() => notify("Agenda completa in arrivo")}>Vedi tutte le mansioni <span>-&gt;</span></button>
         </article>
@@ -490,7 +519,7 @@ export default function Home() {
         {(accountType === "private" || accountType === "company" || accountType === "owner") && <article className="panel shopping-panel">
           <div className="panel-head"><div><span className="eyebrow">LISTA ACQUISTI</span><h2>Prodotti da riordinare</h2></div><div className="panel-actions"><span className="count">{purchases.filter((item) => !item.done).length}</span><button className="text-button" onClick={() => openForm("purchase")}>+ Aggiungi</button></div></div>
           {!purchases.length && <div className="empty-state"><b>Lista acquisti vuota</b><span>Aggiungi il primo prodotto o chiedi alla chat di cercarlo.</span><button onClick={() => openForm("purchase")}>Aggiungi prodotto</button></div>}
-          {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done: !product.done } : product))} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
+          {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => { const done = !item.done; setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done } : product)); void toggleWorkspaceItem(item.id, done).catch(() => notify("Impossibile aggiornare il prodotto")); }} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
           <button className="buy-button" onClick={() => notify("Confronto prezzi avviato sui portali nautici")}>Confronta prezzi e disponibilita</button>
         </article>}
       </section>
