@@ -12,7 +12,6 @@ type WebResult = { reply: string; sources?: { title: string; url: string }[] };
 type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance: string; rating: string; response: string; premium: boolean; tags: string[]; note: string };
 type ServiceCategory = { name: string; icon: string };
-type InstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 type Language = "it" | "en" | "fr" | "es" | "de";
 
 const locationData: Record<LocationKey, { weather: string; sea: string; services: ServiceCategory[] }> = {
@@ -148,7 +147,6 @@ export default function Home() {
   const [form, setForm] = useState({ title: "", category: "Meccanica", details: "" });
   const [toast, setToast] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const installPromptRef = useRef<InstallPromptEvent | null>(null);
 
   useEffect(() => {
     const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
@@ -168,12 +166,6 @@ export default function Home() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    const captureInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      installPromptRef.current = event as InstallPromptEvent;
-    };
-    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
   }, []);
 
   useEffect(() => {
@@ -450,10 +442,6 @@ export default function Home() {
     }
   };
 
-  const installApp = () => {
-    window.location.assign("/downloads/Barcaora-AI-Android.apk");
-  };
-
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
   if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Accesso protetto: le tue liste non sono visibili agli altri utenti.</small></div></main>;
 
@@ -470,7 +458,6 @@ export default function Home() {
               {(Object.keys(locationData) as LocationKey[]).map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
-          <button className="download-app" onClick={installApp}>Scarica app</button>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
           <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
           <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>{profileName.slice(0, 2).toUpperCase()}</button>
@@ -490,7 +477,6 @@ export default function Home() {
           <span className="eyebrow">BUONGIORNO, SIMON</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
           <p>Identifica, trova e organizza. Barcaora AI ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
-          <button className="hero-download" onClick={installApp}>Scarica APK Android</button>
         </div>
         <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
       </section>
@@ -592,7 +578,7 @@ export default function Home() {
         {([["home", "H", "Home"], ["agenda", "OK", "Agenda"], ["scan", "O", "Scansiona"], ["community", "P", "Zona"], ["profile", "SC", "Profilo"]] as [Tab, string, string][]).map(([id, icon, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => goTo(id)}><i>{icon}</i><span>{label}</span></button>)}
       </nav>
 
-      <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri assistente">AI</button>
+      <button className="chat-fab" onClick={() => setChat(!chat)} aria-label="Apri l'assistente Barcaora AI"><span className="assistant-symbol" aria-hidden="true"><i /><i /><i /></span></button>
       {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>BARCAORA AI - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
