@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { chatGPTSignOutPath } from "./chatgpt-auth";
 
 type Tab = "home" | "agenda" | "scan" | "community" | "profile";
 type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
@@ -454,7 +455,7 @@ export default function Home() {
   };
 
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Accesso protetto: le tue liste non sono visibili agli altri utenti.</small></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/barcaora-logo.png" alt="Barcaora AI" /><span>BARCAORA AI</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
@@ -595,7 +596,7 @@ export default function Home() {
       <section className="plans" data-section="profile" id="plans">
         <div className="plans-intro"><span className="eyebrow">PIANI BARCAORA AI</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
         <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
-        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Barcaora-AI-Android.apk" download>Scarica l'app Android</a></div>
+        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Barcaora-AI-Android.apk" download>Scarica l'app Android</a><a className="profile-signout" href={chatGPTSignOutPath("/")}>Esci o cambia account</a><small className="plan-note">Se condividi il link, ogni persona deve accedere col proprio account per vedere il proprio spazio e non quello di chi ha gia aperto l'app su quel dispositivo.</small></div>
       </section>
 
       <nav className="bottom-nav" aria-label="Navigazione principale">
