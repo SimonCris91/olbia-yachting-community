@@ -139,6 +139,7 @@ export default function Home() {
   const [authChecked, setAuthChecked] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [language, setLanguage] = useState<Language>("it");
+  const [showDemoData, setShowDemoData] = useState(false);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
@@ -153,16 +154,19 @@ export default function Home() {
     const savedLanguage = localStorage.getItem("yachting-assistant-language") as Language | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
     const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
+    const savedDemoMode = localStorage.getItem("barcaora-demo-mode");
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedLanguage && ["it", "en", "fr", "es", "de"].includes(savedLanguage)) setLanguage(savedLanguage);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
     if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
+    if (savedDemoMode === "true") setShowDemoData(true);
   }, []);
 
   useEffect(() => { localStorage.setItem("yachting-assistant-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
   useEffect(() => { localStorage.setItem("yachting-assistant-language", language); document.documentElement.lang = language; }, [language]);
+  useEffect(() => { localStorage.setItem("barcaora-demo-mode", showDemoData ? "true" : "false"); }, [showDemoData]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -206,15 +210,22 @@ export default function Home() {
 
   const progress = useMemo(() => tasks.length ? Math.round(tasks.filter((task) => task.done).length / tasks.length * 100) : 0, [tasks]);
   const currentLocation = locationData[location];
-  const allRequests = useMemo(() => [...communityRequests, ...demoRequests], [communityRequests]);
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    const name = (profileName.trim().split(" ")[0] || "Benvenuto").toUpperCase();
+    if (hour < 12) return `BUONGIORNO, ${name}`;
+    if (hour < 18) return `BUON POMERIGGIO, ${name}`;
+    return `BUONA SERA, ${name}`;
+  }, [profileName]);
+  const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
     if (accountType === "private") return request.ownerId === "me";
     if (accountType === "operator") return request.location === location && request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category));
     return request.location === location;
   });
-  const visibleOperators = useMemo(() => operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)), [location, operatorCategory]);
-  const operatorCount = (category: string) => operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
+  const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : [], [location, operatorCategory, showDemoData]);
+  const operatorCount = (category: string) => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : 0;
 
   const notify = (message: string) => {
     setToast(message);
@@ -474,7 +485,7 @@ export default function Home() {
 
       <section className="hero" data-section="home">
         <div>
-          <span className="eyebrow">BUONGIORNO, SIMON</span>
+          <span className="eyebrow">{greeting}</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
           <p>Identifica, trova e organizza. Barcaora AI ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
         </div>
@@ -537,22 +548,35 @@ export default function Home() {
             <button className={accountType === "company" ? "active" : ""} onClick={() => void changeAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
             <button className={accountType === "owner" ? "active" : ""} onClick={() => void changeAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>
           </div>
+          <div className="reality-card">
+            <div>
+              <b>Stato dati</b>
+              <span>{showDemoData ? "Stai visualizzando anche contenuti demo di esempio." : "Stai visualizzando solo dati reali del tuo account e richieste salvate."}</span>
+            </div>
+            <button type="button" className={showDemoData ? "demo-toggle active" : "demo-toggle"} onClick={() => setShowDemoData((value) => !value)}>
+              {showDemoData ? "Nascondi demo" : "Mostra demo"}
+            </button>
+          </div>
           {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
           <button className="publish-job" onClick={() => openForm("request")}>+ Pubblica una richiesta</button>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
-            {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => <article key={request.id}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p>{request.acceptedBy && <em>OK {request.acceptedBy} e disponibile</em>}{accountType !== "private" && request.status === "Aperta" && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}</article>)}
+            {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
+              const isDemo = request.ownerId.startsWith("demo-");
+              return <article key={request.id}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>OK {request.acceptedBy} e disponibile</em>}{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}</article>;
+            })}
           </div>
         </div>
         <div className="operator-area">
           <div className="service-grid">{currentLocation.services.map((service) => { const count = operatorCount(service.name); return <button className={operatorCategory === service.name ? "active" : ""} key={service.name} onClick={() => openOperators(service.name)}><i>{service.icon}</i><span><b>{service.name}</b><small>{count === 1 ? "1 operatore" : `${count} operatori`}</small></span><em>&gt;</em></button>; })}</div>
           <div className="operator-panel">
             <div className="operator-head"><div><span className="eyebrow light">OPERATORI DISPONIBILI</span><h3>{operatorCategory ?? `Tutti a ${location}`}</h3></div><div className="operator-head-actions">{operatorCategory && <button onClick={() => { setOperatorCategory(null); setWebResult(null); }}>Tutti</button>}<button onClick={verifyOperatorsOnWeb} disabled={webLoading}>{webLoading ? "Verifico..." : "Verifica sul web"}</button></div></div>
+            <p className="operator-note">{showDemoData ? "Elenco locale in modalita demo: usa Verifica sul web per controllare aziende reali e fonti." : "Nessun operatore reale e strutturato e ancora collegato internamente. Usa Verifica sul web per trovare attivita reali nella zona."}</p>
             {webResult && <div className="web-result"><RichText text={webResult.reply} />{webResult.sources?.length ? <div className="source-list"><span>Fonti web</span>{webResult.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{index + 1}. {source.title}</a>)}</div> : null}</div>}
             <div className="operator-list">
-              {!visibleOperators.length && <div className="community-empty">Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili.</div>}
+              {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno operatori reali quando avremo un archivio aziende collegato e verificato."}</div>}
               {visibleOperators.map((operator) => <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
-                <div className="operator-title"><b>{operator.name}</b>{operator.premium && <span>Premium</span>}</div>
+                <div className="operator-title"><b>{operator.name}</b><span>Demo</span>{operator.premium && <span>Premium</span>}</div>
                 <p>{operator.note}</p>
                 <div className="operator-meta"><span>{operator.category}</span><span>{operator.distance}</span><span>{operator.rating}/5</span></div>
                 <div className="operator-tags">{operator.tags.map((tag) => <small key={tag}>{tag}</small>)}</div>
@@ -564,14 +588,14 @@ export default function Home() {
       </section>
 
       {(accountType === "company" || accountType === "owner") && <section className="yard-strip">
-        <div><span className="eyebrow">MODALITA CANTIERE</span><h2>Ogni commessa sotto controllo.</h2><p>Imbarcazioni, squadre, attivita, materiali e avanzamento in un unico spazio condiviso.</p></div>
+        <div><span className="eyebrow">MODALITA CANTIERE</span><h2>Ogni commessa sotto controllo.</h2><p>Imbarcazioni, squadre, attivita, materiali e avanzamento in un unico spazio condiviso.</p><small>Area in anteprima: la struttura c'e, ma i dati mostrati qui non sono ancora collegati a commesse reali.</small></div>
         <button onClick={() => setYardOpen(true)}>Apri area cantieri</button>
       </section>}
 
       <section className="plans" data-section="profile" id="plans">
         <div className="plans-intro"><span className="eyebrow">PIANI BARCAORA AI</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
         <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
-        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium attivato in modalita demo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><a className="profile-download" href="/downloads/Barcaora-AI-Android.apk" download>Scarica l'app Android</a></div>
+        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Barcaora-AI-Android.apk" download>Scarica l'app Android</a></div>
       </section>
 
       <nav className="bottom-nav" aria-label="Navigazione principale">
@@ -582,7 +606,7 @@ export default function Home() {
       {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>BARCAORA AI - ONLINE</span><h3>Assistente nautico</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
-      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">BARCAORA AI CANTIERI</span><h2>Commesse attive</h2><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
+      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">BARCAORA AI CANTIERI</span><h2>Commesse attive</h2><small className="plan-note">Anteprima gestionale: questi dati servono a mostrare la struttura dell'area cantieri.</small><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
 
       {formMode && <div className="modal-backdrop" onClick={() => setFormMode(null)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); submitForm(); }}><button type="button" className="modal-close" onClick={() => setFormMode(null)}>x</button><span className="eyebrow">{formMode === "request" ? "NUOVA RICHIESTA" : formMode === "task" ? "AGENDA DI BORDO" : "LISTA ACQUISTI"}</span><h2>{formMode === "request" ? `Richiedi un intervento a ${location}` : formMode === "task" ? "Aggiungi una mansione" : "Aggiungi un prodotto"}</h2><label><span>{formMode === "request" ? "Intervento richiesto" : formMode === "task" ? "Mansione" : "Prodotto"}</span><input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={formMode === "request" ? "Es. Controllo caricabatterie" : "Inserisci un titolo"} required /></label>{formMode === "request" && <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Meccanica</option><option>Elettrica</option><option>Elettronica</option><option>Refit</option><option>Pulizia</option><option>Altro</option></select></label>}<label><span>{formMode === "request" ? "Barca, marina e urgenza" : "Dettagli facoltativi"}</span><textarea value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder={formMode === "request" ? `Es. Marina di ${location}, M/Y 15 m, entro domani` : "Aggiungi informazioni"} /></label><button className="entry-submit" type="submit">{formMode === "request" ? "Pubblica richiesta" : "Salva"}</button></form></div>}
     </main>

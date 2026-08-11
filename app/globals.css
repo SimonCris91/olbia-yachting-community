@@ -22,4 +22,15 @@
 .assistant-symbol i{width:3px;height:3px;border-radius:50%;background:var(--aqua);display:block}
 .profile-download{display:block;margin-top:14px;text-align:center;color:var(--blue);font-size:13px;font-weight:750;text-decoration:none}
 .profile-download:hover{text-decoration:underline}
+.reality-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:18px 0 6px;padding:14px 16px;border:1px solid rgba(255,255,255,.16);border-radius:14px;background:rgba(255,255,255,.06)}
+.reality-card b{display:block;font-size:13px}
+.reality-card span{display:block;margin-top:4px;color:#b7cbd1;font-size:13px;line-height:1.5}
+.demo-toggle{border:1px solid rgba(255,255,255,.25);border-radius:999px;background:transparent;color:#fff;padding:10px 14px;font-size:12px;font-weight:800;white-space:nowrap}
+.demo-toggle.active{background:#fff;color:var(--navy)}
+.data-badge{display:inline-flex;margin-top:10px;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.data-badge.live{background:rgba(24,169,180,.18);color:#7ee6df}
+.data-badge.demo{background:rgba(255,255,255,.12);color:#fff0b8}
+.operator-note{margin:14px 0 0;color:#b7cbd1;font-size:13px;line-height:1.6}
+.yard-strip small,.plan-note{display:block;margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
 @media(max-width:800px){.location{font-size:12px;min-width:44px;max-width:138px;padding:9px 10px}.location-wrap{min-width:118px;max-width:142px;padding:0 8px}.location-select{font-size:12px}.location .chevron{display:none}.location-menu{right:-44px}.bottom-nav i{font-size:13px;font-weight:850}.chat-fab{font-size:13px}}
+@media(max-width:800px){.reality-card{flex-direction:column;align-items:flex-start}.demo-toggle{width:100%}}
