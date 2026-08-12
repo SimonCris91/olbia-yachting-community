@@ -7,6 +7,8 @@
 .location-wrap{border:1px solid var(--line);background:#fff;border-radius:22px;padding:0 10px;display:flex;align-items:center;gap:7px;min-width:132px}
 .location-select{border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;outline:0;width:100%;padding:9px 0;cursor:pointer}
 .location{display:flex;align-items:center;justify-content:center;gap:7px;min-width:132px}
+.account-switch{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;color:var(--navy);font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap}
+.account-switch:hover{text-decoration:none;background:#f3f8f7}
 .location-dot{width:7px;height:7px;border-radius:50%;background:var(--aqua);display:inline-block;flex:0 0 auto}
 .chevron{font-size:10px;color:var(--muted)}
 .location-menu{position:absolute;right:0;top:calc(100% + 8px);width:190px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 18px 45px rgba(7,36,53,.18);z-index:50}
@@ -34,5 +36,5 @@
 .data-badge.demo{background:rgba(255,255,255,.12);color:#fff0b8}
 .operator-note{margin:14px 0 0;color:#b7cbd1;font-size:13px;line-height:1.6}
 .yard-strip small,.plan-note{display:block;margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
-@media(max-width:800px){.location{font-size:12px;min-width:44px;max-width:138px;padding:9px 10px}.location-wrap{min-width:118px;max-width:142px;padding:0 8px}.location-select{font-size:12px}.location .chevron{display:none}.location-menu{right:-44px}.bottom-nav i{font-size:13px;font-weight:850}.chat-fab{font-size:13px}}
+@media(max-width:800px){.location{font-size:12px;min-width:44px;max-width:138px;padding:9px 10px}.location-wrap{min-width:118px;max-width:142px;padding:0 8px}.location-select{font-size:12px}.location .chevron{display:none}.location-menu{right:-44px}.bottom-nav i{font-size:13px;font-weight:850}.chat-fab{font-size:13px}.account-switch{padding:9px 10px;font-size:11px}}
 @media(max-width:800px){.reality-card{flex-direction:column;align-items:flex-start}.demo-toggle{width:100%}}
