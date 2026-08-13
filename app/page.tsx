@@ -10,7 +10,7 @@ type Purchase = { id: number; title: string; detail: string; price: string; done
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
 type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
-type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance: string; rating: string; response: string; premium: boolean; tags: string[]; note: string };
+type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
 
@@ -141,11 +141,15 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>("it");
   const [showDemoData, setShowDemoData] = useState(false);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
+  const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [realOperators, setRealOperators] = useState<Operator[]>([]);
+  const [myOperatorProfile, setMyOperatorProfile] = useState<Operator | null>(null);
   const [webLoading, setWebLoading] = useState(false);
   const [webResult, setWebResult] = useState<WebResult | null>(null);
   const [form, setForm] = useState({ title: "", category: "Meccanica", details: "" });
+  const [operatorForm, setOperatorForm] = useState<{ name: string; category: string; locations: LocationKey[]; phone: string; email: string; website: string; note: string; tags: string }>({ name: "", category: "Meccanica marina", locations: [location], phone: "", email: "", website: "", note: "", tags: "" });
   const [toast, setToast] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -202,6 +206,12 @@ export default function Home() {
           status: item.status === "accepted" ? "Presa in carico" : "Aperta",
           acceptedBy: item.acceptedBy,
         })));
+        const operatorsResponse = await fetch(`/api/operators?location=${encodeURIComponent(location)}`);
+        if (operatorsResponse.ok) {
+          const operatorsData = await operatorsResponse.json() as { operators?: Operator[]; mine?: Operator | null };
+          setRealOperators(operatorsData.operators ?? []);
+          setMyOperatorProfile(operatorsData.mine ?? null);
+        }
       } catch { /* L'accesso viene riproposto quando la rete torna disponibile. */ }
       finally { setAuthChecked(true); }
     };
@@ -224,8 +234,8 @@ export default function Home() {
     if (accountType === "operator") return request.location === location && request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category));
     return request.location === location;
   });
-  const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : [], [location, operatorCategory, showDemoData]);
-  const operatorCount = (category: string) => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : 0;
+  const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : realOperators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)), [location, operatorCategory, showDemoData, realOperators]);
+  const operatorCount = (category: string) => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
 
   const notify = (message: string) => {
     setToast(message);
@@ -300,6 +310,43 @@ export default function Home() {
     setSelectedOperator(operator);
     setForm({ title: `Intervento ${operator.category}`, category: operator.category.includes("Elettrica") ? "Elettrica" : operator.category.includes("Elettronica") ? "Elettronica" : operator.category.includes("Refit") || operator.category.includes("Cantieri") ? "Refit" : "Meccanica", details: `${operator.name} - ${location}. Descrivi qui il problema, barca e urgenza.` });
     setFormMode("request");
+  };
+
+  const openOperatorEditor = () => {
+    setOperatorForm({
+      name: myOperatorProfile?.name ?? profileName ?? "",
+      category: myOperatorProfile?.category ?? operatorCategory ?? operatorCategories[0] ?? "Meccanica marina",
+      locations: myOperatorProfile?.locations?.length ? myOperatorProfile.locations : [location],
+      phone: myOperatorProfile?.phone ?? "",
+      email: myOperatorProfile?.email ?? "",
+      website: myOperatorProfile?.website ?? "",
+      note: myOperatorProfile?.note ?? "",
+      tags: myOperatorProfile?.tags?.join(", ") ?? "",
+    });
+    setOperatorEditorOpen(true);
+  };
+
+  const saveOperatorProfile = async () => {
+    const payload = {
+      ...operatorForm,
+      locations: operatorForm.locations,
+      tags: operatorForm.tags.split(",").map((item) => item.trim()).filter(Boolean),
+    };
+    const response = await fetch("/api/operators", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const data = await response.json() as { operator?: Operator; error?: string; signIn?: string };
+    if (!response.ok) {
+      if (data.signIn) window.location.href = data.signIn;
+      throw new Error(data.error ?? "Impossibile salvare il profilo operatore");
+    }
+    if (data.operator) {
+      setMyOperatorProfile(data.operator);
+      setRealOperators((items) => {
+        const next = items.filter((item) => item.id !== data.operator!.id);
+        return [data.operator!, ...next];
+      });
+    }
+    setOperatorEditorOpen(false);
+    notify("Profilo operatore salvato");
   };
 
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -572,16 +619,18 @@ export default function Home() {
           <div className="service-grid">{currentLocation.services.map((service) => { const count = operatorCount(service.name); return <button className={operatorCategory === service.name ? "active" : ""} key={service.name} onClick={() => openOperators(service.name)}><i>{service.icon}</i><span><b>{service.name}</b><small>{count === 1 ? "1 operatore" : `${count} operatori`}</small></span><em>&gt;</em></button>; })}</div>
           <div className="operator-panel">
             <div className="operator-head"><div><span className="eyebrow light">OPERATORI DISPONIBILI</span><h3>{operatorCategory ?? `Tutti a ${location}`}</h3></div><div className="operator-head-actions">{operatorCategory && <button onClick={() => { setOperatorCategory(null); setWebResult(null); }}>Tutti</button>}<button onClick={verifyOperatorsOnWeb} disabled={webLoading}>{webLoading ? "Verifico..." : "Verifica sul web"}</button></div></div>
-            <p className="operator-note">{showDemoData ? "Elenco locale in modalita demo: usa Verifica sul web per controllare aziende reali e fonti." : "Nessun operatore reale e strutturato e ancora collegato internamente. Usa Verifica sul web per trovare attivita reali nella zona."}</p>
+            <p className="operator-note">{showDemoData ? "Elenco locale in modalita demo: usa Verifica sul web per controllare aziende reali e fonti." : visibleOperators.length ? "Archivio operatori reale collegato al database. I dati mostrati qui arrivano dai profili pubblicati dagli operatori." : "Nessun operatore reale pubblicato in questa zona. Un operatore o una ditta puo creare adesso il proprio profilo."}</p>
+            {(accountType === "operator" || accountType === "company") && <button className="publish-job secondary-job" onClick={openOperatorEditor}>{myOperatorProfile ? "Aggiorna profilo operatore" : "Pubblica profilo operatore"}</button>}
             {webResult && <div className="web-result"><RichText text={webResult.reply} />{webResult.sources?.length ? <div className="source-list"><span>Fonti web</span>{webResult.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{index + 1}. {source.title}</a>)}</div> : null}</div>}
             <div className="operator-list">
-              {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno operatori reali quando avremo un archivio aziende collegato e verificato."}</div>}
+              {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno gli operatori reali che pubblicano un profilo per questa zona."}</div>}
               {visibleOperators.map((operator) => <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
-                <div className="operator-title"><b>{operator.name}</b><span>Demo</span>{operator.premium && <span>Premium</span>}</div>
+                <div className="operator-title"><b>{operator.name}</b>{showDemoData && <span>Demo</span>}{!showDemoData && operator.verified && <span>Verificato</span>}{operator.premium && <span>Premium</span>}</div>
                 <p>{operator.note}</p>
-                <div className="operator-meta"><span>{operator.category}</span><span>{operator.distance}</span><span>{operator.rating}/5</span></div>
+                <div className="operator-meta"><span>{operator.category}</span>{operator.distance && <span>{operator.distance}</span>}{operator.rating && <span>{operator.rating}/5</span>}</div>
                 <div className="operator-tags">{operator.tags.map((tag) => <small key={tag}>{tag}</small>)}</div>
-                <div className="operator-actions"><em>{operator.response}</em><button onClick={(event) => { event.stopPropagation(); requestOperator(operator); }}>Richiedi intervento</button></div>
+                {!showDemoData && <div className="operator-contact">{operator.phone && <a href={`tel:${operator.phone}`}>{operator.phone}</a>}{operator.email && <a href={`mailto:${operator.email}`}>{operator.email}</a>}{operator.website && <a href={operator.website.startsWith("http") ? operator.website : `https://${operator.website}`} target="_blank" rel="noreferrer">Sito</a>}</div>}
+                <div className="operator-actions"><em>{operator.response ?? (showDemoData ? "Disponibilita demo" : "Profilo reale pubblicato")}</em><button onClick={(event) => { event.stopPropagation(); requestOperator(operator); }}>Richiedi intervento</button></div>
               </article>)}
             </div>
           </div>
@@ -608,6 +657,8 @@ export default function Home() {
       {toast && <div className="toast">OK {toast}</div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">BARCAORA AI CANTIERI</span><h2>Commesse attive</h2><small className="plan-note">Anteprima gestionale: questi dati servono a mostrare la struttura dell'area cantieri.</small><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
+
+      {operatorEditorOpen && <div className="modal-backdrop" onClick={() => setOperatorEditorOpen(false)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); void saveOperatorProfile().catch((error: Error) => notify(error.message)); }}><button type="button" className="modal-close" onClick={() => setOperatorEditorOpen(false)}>x</button><span className="eyebrow">PROFILO OPERATORE</span><h2>{myOperatorProfile ? "Aggiorna il tuo profilo" : "Pubblica il tuo profilo"}</h2><label><span>Nome attivita</span><input autoFocus value={operatorForm.name} onChange={(event) => setOperatorForm({ ...operatorForm, name: event.target.value })} placeholder="Es. Nautica Gallura Service" required /></label><label><span>Categoria</span><select value={operatorForm.category} onChange={(event) => setOperatorForm({ ...operatorForm, category: event.target.value })}><option>Meccanica marina</option><option>Elettrica nautica</option><option>Elettronica</option><option>Cantieri & refit</option><option>Ricambi nautici</option><option>Tender e gommoni</option><option>Pulizia e detailing</option><option>Concierge yacht</option><option>Cambusa e forniture</option><option>Vele e rigging</option><option>Tappezzeria nautica</option><option>Ormeggi e marina</option></select></label><label><span>Localita coperte</span><div className="location-checks">{(Object.keys(locationData) as LocationKey[]).map((item) => <label key={item} className="check-option"><input type="checkbox" checked={operatorForm.locations.includes(item)} onChange={(event) => setOperatorForm((current) => ({ ...current, locations: event.target.checked ? [...current.locations, item] : current.locations.filter((locationItem) => locationItem !== item) }))} /><span>{item}</span></label>)}</div></label><label><span>Telefono</span><input value={operatorForm.phone} onChange={(event) => setOperatorForm({ ...operatorForm, phone: event.target.value })} placeholder="+39 ..." /></label><label><span>Email</span><input value={operatorForm.email} onChange={(event) => setOperatorForm({ ...operatorForm, email: event.target.value })} placeholder="info@azienda.it" /></label><label><span>Sito web</span><input value={operatorForm.website} onChange={(event) => setOperatorForm({ ...operatorForm, website: event.target.value })} placeholder="www.azienda.it" /></label><label><span>Tag servizi</span><input value={operatorForm.tags} onChange={(event) => setOperatorForm({ ...operatorForm, tags: event.target.value })} placeholder="Generatori, Batterie, Urgenze" /></label><label><span>Descrizione</span><textarea value={operatorForm.note} onChange={(event) => setOperatorForm({ ...operatorForm, note: event.target.value })} placeholder="Spiega servizi, tempi e area operativa" /></label><button className="entry-submit" type="submit">Salva profilo operatore</button></form></div>}
 
       {formMode && <div className="modal-backdrop" onClick={() => setFormMode(null)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); submitForm(); }}><button type="button" className="modal-close" onClick={() => setFormMode(null)}>x</button><span className="eyebrow">{formMode === "request" ? "NUOVA RICHIESTA" : formMode === "task" ? "AGENDA DI BORDO" : "LISTA ACQUISTI"}</span><h2>{formMode === "request" ? `Richiedi un intervento a ${location}` : formMode === "task" ? "Aggiungi una mansione" : "Aggiungi un prodotto"}</h2><label><span>{formMode === "request" ? "Intervento richiesto" : formMode === "task" ? "Mansione" : "Prodotto"}</span><input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={formMode === "request" ? "Es. Controllo caricabatterie" : "Inserisci un titolo"} required /></label>{formMode === "request" && <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Meccanica</option><option>Elettrica</option><option>Elettronica</option><option>Refit</option><option>Pulizia</option><option>Altro</option></select></label>}<label><span>{formMode === "request" ? "Barca, marina e urgenza" : "Dettagli facoltativi"}</span><textarea value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder={formMode === "request" ? `Es. Marina di ${location}, M/Y 15 m, entro domani` : "Aggiungi informazioni"} /></label><button className="entry-submit" type="submit">{formMode === "request" ? "Pubblica richiesta" : "Salva"}</button></form></div>}
     </main>
