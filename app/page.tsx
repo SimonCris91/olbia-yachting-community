@@ -179,10 +179,6 @@ export default function Home() {
   useEffect(() => { localStorage.setItem("barcaora-demo-mode", showDemoData ? "true" : "false"); }, [showDemoData]);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
     const loadSavedRequests = async () => {
       try {
         const profileResponse = await fetch("/api/profile");
