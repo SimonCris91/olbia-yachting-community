@@ -6,34 +6,6 @@ const roles = ["operator", "company"] as const;
 
 type ActorRole = "private" | "operator" | "company";
 
-async function ensureOperatorsTable() {
-  await env.DB.exec(`
-    CREATE TABLE IF NOT EXISTS operators (
-      id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-      owner_user_id text NOT NULL,
-      display_name text NOT NULL,
-      category text NOT NULL,
-      locations text NOT NULL,
-      phone text DEFAULT '' NOT NULL,
-      email text DEFAULT '' NOT NULL,
-      website text DEFAULT '' NOT NULL,
-      telegram text DEFAULT '' NOT NULL,
-      tags text DEFAULT '[]' NOT NULL,
-      note text DEFAULT '' NOT NULL,
-      verified integer DEFAULT 0 NOT NULL,
-      active integer DEFAULT 1 NOT NULL,
-      created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
-    );
-  `);
-  const columns = await env.DB.prepare("PRAGMA table_info(operators)").all<{ name: string }>();
-  if (!(columns.results ?? []).some((column) => column.name === "telegram")) {
-    await env.DB.exec("ALTER TABLE operators ADD COLUMN telegram text DEFAULT '' NOT NULL;");
-  }
-  await env.DB.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_operators_owner_user_id ON operators (owner_user_id);");
-  await env.DB.exec("CREATE INDEX IF NOT EXISTS idx_operators_category_active ON operators (category, active);");
-}
-
 async function identity() {
   const user = await getChatGPTUser();
   if (!user) return null;
@@ -52,7 +24,6 @@ function parseJsonArray(value: string | null | undefined) {
 }
 
 export async function GET(request: Request) {
-  await ensureOperatorsTable();
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
 
@@ -145,7 +116,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  await ensureOperatorsTable();
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
   if (!roles.includes(actor.role as (typeof roles)[number])) {
@@ -244,7 +214,6 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  await ensureOperatorsTable();
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
   if (!roles.includes(actor.role as (typeof roles)[number])) {
