@@ -17,6 +17,7 @@ async function ensureOperatorsTable() {
       phone text DEFAULT '' NOT NULL,
       email text DEFAULT '' NOT NULL,
       website text DEFAULT '' NOT NULL,
+      telegram text DEFAULT '' NOT NULL,
       tags text DEFAULT '[]' NOT NULL,
       note text DEFAULT '' NOT NULL,
       verified integer DEFAULT 0 NOT NULL,
@@ -25,6 +26,10 @@ async function ensureOperatorsTable() {
       updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
     );
   `);
+  const columns = await env.DB.prepare("PRAGMA table_info(operators)").all<{ name: string }>();
+  if (!(columns.results ?? []).some((column) => column.name === "telegram")) {
+    await env.DB.exec("ALTER TABLE operators ADD COLUMN telegram text DEFAULT '' NOT NULL;");
+  }
   await env.DB.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_operators_owner_user_id ON operators (owner_user_id);");
   await env.DB.exec("CREATE INDEX IF NOT EXISTS idx_operators_category_active ON operators (category, active);");
 }
@@ -55,7 +60,7 @@ export async function GET(request: Request) {
   const location = url.searchParams.get("location");
   const category = url.searchParams.get("category");
 
-  let query = "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, tags, note, verified, active FROM operators WHERE active = 1";
+  let query = "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, telegram, tags, note, verified, active FROM operators WHERE active = 1";
   const bindings: string[] = [];
 
   if (location && locations.includes(location as (typeof locations)[number])) {
@@ -77,6 +82,7 @@ export async function GET(request: Request) {
     phone: string;
     email: string;
     website: string;
+    telegram: string;
     tags: string;
     note: string;
     verified: number;
@@ -84,7 +90,7 @@ export async function GET(request: Request) {
   }>();
 
   const mine = (await env.DB.prepare(
-    "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, tags, note, verified, active FROM operators WHERE owner_user_id = ? LIMIT 1"
+    "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, telegram, tags, note, verified, active FROM operators WHERE owner_user_id = ? LIMIT 1"
   ).bind(actor.user.userId).first<{
     id: number;
     ownerUserId: string;
@@ -94,6 +100,7 @@ export async function GET(request: Request) {
     phone: string;
     email: string;
     website: string;
+    telegram: string;
     tags: string;
     note: string;
     verified: number;
@@ -109,6 +116,7 @@ export async function GET(request: Request) {
     phone: string;
     email: string;
     website: string;
+    telegram: string;
     tags: string;
     note: string;
     verified: number;
@@ -122,6 +130,7 @@ export async function GET(request: Request) {
     phone: row.phone,
     email: row.email,
     website: row.website,
+    telegram: row.telegram,
     tags: parseJsonArray(row.tags),
     note: row.note,
     verified: !!row.verified,
@@ -150,6 +159,7 @@ export async function POST(request: Request) {
     phone?: string;
     email?: string;
     website?: string;
+    telegram?: string;
     note?: string;
     tags?: string[];
   };
@@ -161,6 +171,7 @@ export async function POST(request: Request) {
   const phone = (body.phone ?? "").trim().slice(0, 50);
   const email = (body.email ?? actor.user.email ?? "").trim().slice(0, 120);
   const website = (body.website ?? "").trim().slice(0, 200);
+  const telegram = (body.telegram ?? "").trim().slice(0, 120);
   const note = (body.note ?? "").trim().slice(0, 600);
 
   if (!name || !category || !selectedLocations.length) {
@@ -168,8 +179,8 @@ export async function POST(request: Request) {
   }
 
   await env.DB.prepare(`
-    INSERT INTO operators (owner_user_id, display_name, category, locations, phone, email, website, tags, note, verified, active, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, CURRENT_TIMESTAMP)
+    INSERT INTO operators (owner_user_id, display_name, category, locations, phone, email, website, telegram, tags, note, verified, active, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, CURRENT_TIMESTAMP)
     ON CONFLICT(owner_user_id) DO UPDATE SET
       display_name = excluded.display_name,
       category = excluded.category,
@@ -177,6 +188,7 @@ export async function POST(request: Request) {
       phone = excluded.phone,
       email = excluded.email,
       website = excluded.website,
+      telegram = excluded.telegram,
       tags = excluded.tags,
       note = excluded.note,
       active = 1,
@@ -189,12 +201,13 @@ export async function POST(request: Request) {
     phone,
     email,
     website,
+    telegram,
     JSON.stringify(tags),
     note,
   ).run();
 
   const operator = await env.DB.prepare(
-    "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, tags, note, verified, active FROM operators WHERE owner_user_id = ? LIMIT 1"
+    "SELECT id, owner_user_id AS ownerUserId, display_name AS name, category, locations, phone, email, website, telegram, tags, note, verified, active FROM operators WHERE owner_user_id = ? LIMIT 1"
   ).bind(actor.user.userId).first<{
     id: number;
     ownerUserId: string;
@@ -204,6 +217,7 @@ export async function POST(request: Request) {
     phone: string;
     email: string;
     website: string;
+    telegram: string;
     tags: string;
     note: string;
     verified: number;
@@ -220,6 +234,7 @@ export async function POST(request: Request) {
       phone: operator.phone,
       email: operator.email,
       website: operator.website,
+      telegram: operator.telegram,
       tags: parseJsonArray(operator.tags),
       note: operator.note,
       verified: !!operator.verified,

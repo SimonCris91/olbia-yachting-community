@@ -1,5 +1,5 @@
 {
-  "version": "7",
+  "version": "8",
   "dialect": "sqlite",
   "entries": [
     {
@@ -7,6 +7,13 @@
       "version": "6",
       "when": 1786271500000,
       "tag": "0000_metayachting_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786272100000,
+      "tag": "0002_telegram_profiles_operators",
       "breakpoints": true
     }
   ]

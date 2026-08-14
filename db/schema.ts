@@ -6,10 +6,29 @@ export const profiles = sqliteTable("profiles", {
   userId: text("user_id").notNull(),
   email: text("email"),
   displayName: text("display_name"),
+  telegram: text("telegram"),
   role: text("role", { enum: ["private", "operator", "company"] }).notNull().default("private"),
   plan: text("plan", { enum: ["standard", "premium", "yards"] }).notNull().default("standard"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [uniqueIndex("idx_profiles_user_id").on(table.userId)]);
+
+export const operators = sqliteTable("operators", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerUserId: text("owner_user_id").notNull(),
+  displayName: text("display_name").notNull(),
+  category: text("category").notNull(),
+  locations: text("locations").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  telegram: text("telegram"),
+  tags: text("tags").notNull().default("[]"),
+  note: text("note").notNull().default(""),
+  verified: integer("verified", { mode: "boolean" }).notNull().default(false),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [uniqueIndex("idx_operators_owner_user_id").on(table.ownerUserId), index("idx_operators_category_active").on(table.category, table.active)]);
 
 export const aiUsage = sqliteTable("ai_usage", {
   id: integer("id").primaryKey({ autoIncrement: true }),
