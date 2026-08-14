@@ -505,6 +505,16 @@ export default function Home() {
     }
   };
 
+  const openTelegramLink = () => {
+    const telegram = normalizeTelegramLink(telegramHandle);
+    if (telegram) {
+      window.open(telegram, "_blank", "noopener,noreferrer");
+      return;
+    }
+    goTo("profile");
+    notify("Aggiungi prima il tuo Telegram nel profilo");
+  };
+
   const sendChat = async (preset?: string) => {
     const text = (preset ?? chatText).trim();
     if (!text) return;
@@ -543,6 +553,7 @@ export default function Home() {
           </div>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
           <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
+          <button className="telegram-switch" type="button" onClick={openTelegramLink}>Telegram</button>
           <a className="account-switch" href="/signout-with-chatgpt?return_to=%2F">Cambia account</a>
           <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>{profileName.slice(0, 2).toUpperCase()}</button>
         </div>
