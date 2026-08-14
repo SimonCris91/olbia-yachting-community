@@ -177,6 +177,21 @@ export default function Home() {
   useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
   useEffect(() => { localStorage.setItem("yachting-assistant-language", language); document.documentElement.lang = language; }, [language]);
   useEffect(() => { localStorage.setItem("barcaora-demo-mode", showDemoData ? "true" : "false"); }, [showDemoData]);
+  useEffect(() => {
+    const cleanup = async () => {
+      try {
+        if (!("serviceWorker" in navigator) || !("caches" in window)) return;
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        const cacheKeys = await caches.keys();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+        if (registrations.length > 0) window.location.reload();
+      } catch {
+        // Il sito resta usabile anche se la pulizia della cache non riesce.
+      }
+    };
+    void cleanup();
+  }, []);
 
   useEffect(() => {
     const loadSavedRequests = async () => {
