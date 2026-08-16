@@ -18,14 +18,25 @@ const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Assistant";
 
 const shopCategories = [
-  { id: "safety", icon: "S", name: "Giubbotti di salvataggio", note: "Sicurezza personale e dotazioni per l'equipaggio", source: "SVB", url: "https://www.svb24.com/en/category/life-jackets-buoyancy-aids", badge: "Popolare" },
-  { id: "pumps", icon: "P", name: "Pompe di sentina", note: "Pompe automatiche, manuali, giranti e accessori", source: "Osculati", url: "https://www.osculati.com/it/11141/16-pompe-sentina-giranti-autoclavi", badge: "Manutenzione" },
-  { id: "fenders", icon: "F", name: "Parabordi e accessori", note: "Protezione durante ormeggio e attracco", source: "Osculati", url: "https://www.osculati.com/it/11682/parabordi-boe", badge: "Popolare" },
-  { id: "ropes", icon: "C", name: "Cime da ormeggio", note: "Cime, impiombature e linee d'ancoraggio", source: "Osculati", url: "https://www.osculati.com/it/11001/ancoraggio-e-ormeggio", badge: "Essenziale" },
-  { id: "antifouling", icon: "A", name: "Antivegetativa", note: "Prodotti e accessori per carena e manutenzione", source: "SVB", url: "https://www.svb24.com/en/category/antifouling", badge: "Stagionale" },
-  { id: "instruments", icon: "N", name: "Strumentazione di bordo", note: "Sistemi strumenti, sensori e navigazione", source: "SVB", url: "https://www.svb24.com/en/category/instrument-systems", badge: "Tecnologia" },
-  { id: "toilets", icon: "W", name: "WC nautici e ricambi", note: "WC manuali, elettrici e parti di ricambio", source: "SVB", url: "https://www.svb24.com/en/category/marine-toilets", badge: "Ricambi" },
-  { id: "engines", icon: "M", name: "Ricambi motore", note: "Ricambi per motori entrobordo, piedi e trasmissioni", source: "SVB", url: "https://www.svb24.com/en/category/spares-for-boat-motors", badge: "Officina" },
+  { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
+  { id: "pumps", symbol: "≈", tone: "water", name: "Pompe e impianti acqua", note: "Pompe di sentina, autoclavi, giranti, raccordi e accessori idraulici", source: "Osculati", providers: ["Osculati", "TREM", "SVB"], badge: "Impianti" },
+  { id: "mooring", symbol: "⚓", tone: "mooring", name: "Ormeggio e ancoraggio", note: "Ancore, catene, cime, parabordi, boe, bitte e accessori da banchina", source: "Osculati", providers: ["Osculati", "TREM", "Motomarine"], badge: "Essenziale" },
+  { id: "electrical", symbol: "ϟ", tone: "electrical", name: "Elettrica, luci ed energia", note: "Batterie, caricabatterie, quadri, fanali, cavi, fusibili e inverter", source: "Motomarine", providers: ["Motomarine", "FNI", "Osculati", "SVB"], badge: "12 / 24 V" },
+  { id: "deck", symbol: "◇", tone: "deck", name: "Ferramenta e coperta", note: "Chiusure, maniglie, cerniere, oblò, passacavi e accessori di design", source: "Foresti & Suardi", providers: ["Foresti & Suardi", "Motomarine", "TREM"], badge: "Coperta" },
+  { id: "engines", symbol: "⚙", tone: "engine", name: "Ricambi motore", note: "Anodi, filtri, giranti, eliche, serbatoi e componenti per la manutenzione", source: "SVB", providers: ["SVB", "Motomarine", "FNI"], badge: "Officina" },
+  { id: "instruments", symbol: "⌖", tone: "electronics", name: "Strumentazione ed elettronica", note: "GPS, radar, VHF, sensori, bussole, antenne e sistemi strumenti", source: "SVB", providers: ["SVB", "Motomarine", "FNI"], badge: "Navigazione" },
+  { id: "antifouling", symbol: "◒", tone: "care", name: "Cura barca e carena", note: "Antivegetative, detergenti, lucidanti, sigillanti, vernici e utensili", source: "SVB", providers: ["SVB", "TREM", "Motomarine"], badge: "Manutenzione" },
+  { id: "comfort", symbol: "⌂", tone: "comfort", name: "Comfort e servizi di bordo", note: "WC nautici, cucina, frigoriferi, rubinetteria, stoviglie e arredo", source: "TREM", providers: ["TREM", "SVB", "Motomarine"], badge: "A bordo" },
+  { id: "tender", symbol: "➤", tone: "tender", name: "Tender e tempo libero", note: "Tender, gonfiatori, accessori per battelli, alaggio e sport acquatici", source: "TREM", providers: ["TREM", "Motomarine", "Osculati"], badge: "Tempo libero" },
+];
+
+const shopSuppliers = [
+  { id: "vendor-motomarine", name: "Motomarine", note: "Catalogo generalista" },
+  { id: "vendor-fni", name: "FNI", note: "Forniture Nautiche Italiane" },
+  { id: "vendor-trem", name: "TREM", note: "Catalogo nautica" },
+  { id: "vendor-osculati", name: "Osculati", note: "Accessori nautici" },
+  { id: "vendor-foresti", name: "Foresti & Suardi", note: "Ferramenta e design" },
+  { id: "vendor-svb", name: "SVB", note: "Catalogo europeo" },
 ];
 
 const normalizeTelegramLink = (value: string) => {
@@ -248,7 +259,7 @@ export default function Home() {
   const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
   const visibleShopCategories = useMemo(() => {
     const query = shopQuery.trim().toLowerCase();
-    return query ? shopCategories.filter((item) => `${item.name} ${item.note} ${item.badge}`.toLowerCase().includes(query)) : shopCategories;
+    return query ? shopCategories.filter((item) => `${item.name} ${item.note} ${item.badge} ${item.providers.join(" ")}`.toLowerCase().includes(query)) : shopCategories;
   }, [shopQuery]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
@@ -608,18 +619,22 @@ export default function Home() {
         <div className="shop-hero">
           <span className="eyebrow light">VETRINA NAUTICA</span>
           <h1>Trova ciò che serve a bordo.</h1>
-          <p>Categorie ad alta domanda indicate dai cataloghi nautici consultati. L'acquisto avviene sempre sul sito del venditore esterno.</p>
+          <p>Descrivi ciò che serve alla barca, confronta le categorie e usa l'assistente per verificare compatibilità e dati tecnici prima di aprire un catalogo esterno.</p>
           <label className="shop-search"><span>Cerca nella vetrina</span><input value={shopQuery} onChange={(event) => setShopQuery(event.target.value)} placeholder="Es. pompa, parabordo, ricambio motore" /></label>
         </div>
-        <div className="shop-disclosure"><b>Vetrina esterna, non checkout interno</b><span>Olbia Yachting Community non vende questi articoli, non incassa il pagamento e al momento non riceve commissioni. Prezzi, disponibilità, spedizione e resi dipendono dal venditore.</span></div>
+        <div className="shop-disclosure"><b>Assistente all'acquisto, non checkout interno</b><span>Olbia Yachting Community non vende questi articoli, non incassa il pagamento e al momento non riceve commissioni. Prezzi, disponibilità, spedizione e resi dipendono dal venditore.</span></div>
+        <section className="supplier-strip" aria-labelledby="supplier-title">
+          <div className="supplier-heading"><span>CATALOGHI CONSULTATI</span><h2 id="supplier-title">Più fornitori, una sola ricerca.</h2><p>I nomi appartengono ai rispettivi titolari. La presenza qui indica soltanto un collegamento al catalogo ufficiale, non una partnership.</p></div>
+          <div className="supplier-list">{shopSuppliers.map((supplier) => <a key={supplier.id} href={`/api/out?id=${encodeURIComponent(supplier.id)}`} target="_blank" rel="noreferrer nofollow sponsored"><b>{supplier.name}</b><small>{supplier.note}</small><i aria-hidden="true">↗</i></a>)}</div>
+        </section>
         <div className="shop-grid">
           {visibleShopCategories.map((item) => <article className="shop-card" key={item.id}>
-            <div className="shop-card-icon">{item.icon}</div>
-            <span className="shop-badge">{item.badge}</span>
+            <div className={`shop-card-visual ${item.tone}`} aria-hidden="true"><span>{item.symbol}</span><i /><i /></div>
+            <div className="shop-card-head"><span className="shop-badge">{item.badge}</span><small>Catalogo principale: {item.source}</small></div>
             <h2>{item.name}</h2>
             <p>{item.note}</p>
-            <small>Catalogo esterno: {item.source}</small>
-            <div><a href={`/api/out?id=${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer nofollow">Apri il catalogo</a><button onClick={() => { setChatText(`Aiutami a scegliere: ${item.name}. Quali dati della barca devo verificare prima dell'acquisto?`); setChat(true); }}>Chiedi all'AI</button></div>
+            <div className="shop-providers" aria-label={`Fornitori per ${item.name}`}>{item.providers.map((provider) => <span key={provider}>{provider}</span>)}</div>
+            <div className="shop-actions"><a href={`/api/out?id=${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer nofollow sponsored">Apri il catalogo</a><button onClick={() => { setChatText(`Aiutami a scegliere: ${item.name}. Quali dati della barca devo verificare prima dell'acquisto?`); setChat(true); }}>Chiedi all'AI</button></div>
           </article>)}
           {!visibleShopCategories.length && <div className="shop-empty"><b>Nessuna categoria trovata</b><span>Prova un termine più generale oppure chiedi direttamente allo Yachting Assistant.</span><button onClick={() => setChat(true)}>Apri assistente</button></div>}
         </div>

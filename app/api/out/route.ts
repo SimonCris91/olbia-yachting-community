@@ -1,15 +1,32 @@
 const destinations: Record<string, string> = {
   safety: "https://www.svb24.com/en/category/life-jackets-buoyancy-aids",
   pumps: "https://www.osculati.com/it/11141/16-pompe-sentina-giranti-autoclavi",
-  fenders: "https://www.osculati.com/it/11682/parabordi-boe",
-  ropes: "https://www.osculati.com/it/11001/ancoraggio-e-ormeggio",
+  mooring: "https://www.osculati.com/it/11001/ancoraggio-e-ormeggio",
+  electrical: "https://www.motomarine.it/it",
+  deck: "https://forestiesuardi.it/",
   antifouling: "https://www.svb24.com/en/category/antifouling",
   instruments: "https://www.svb24.com/en/category/instrument-systems",
-  toilets: "https://www.svb24.com/en/category/marine-toilets",
+  comfort: "https://www.trem.net/italia.html",
+  tender: "https://www.trem.net/italia.html",
   engines: "https://www.svb24.com/en/category/spares-for-boat-motors",
+  "vendor-motomarine": "https://www.motomarine.it/it",
+  "vendor-fni": "https://www.fni.it/it/",
+  "vendor-trem": "https://www.trem.net/catalogo",
+  "vendor-osculati": "https://www.osculati.com/it",
+  "vendor-foresti": "https://forestiesuardi.it/",
+  "vendor-svb": "https://www.svb24.com/",
 };
 
-const allowedHosts = new Set(["www.svb24.com", "svb24.com", "www.osculati.com", "osculati.com", "www.amazon.it", "amazon.it", "www.ebay.it", "ebay.it"]);
+const allowedHosts = new Set([
+  "www.svb24.com", "svb24.com",
+  "www.osculati.com", "osculati.com",
+  "www.motomarine.it", "motomarine.it",
+  "www.fni.it", "fni.it",
+  "www.trem.net", "trem.net",
+  "www.forestiesuardi.it", "forestiesuardi.it",
+  "www.amazon.it", "amazon.it",
+  "www.ebay.it", "ebay.it",
+]);
 
 function affiliateOverrides() {
   const raw = process.env.AFFILIATE_LINK_OVERRIDES_JSON;
