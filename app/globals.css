@@ -199,7 +199,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .service-grid { grid-template-columns: 1fr; }
   .yard-strip { margin: 30px 16px; padding: 26px; display: block; }
   .yard-strip button { width: 100%; margin-top: 22px; }
-  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: 70px; padding-bottom: max(env(safe-area-inset-bottom), 5px); border-top: 1px solid var(--line); background: rgba(255,255,255,.97); backdrop-filter: blur(15px); display: grid; grid-template-columns: repeat(5, 1fr); }
+  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: 70px; padding-bottom: max(env(safe-area-inset-bottom), 5px); border-top: 1px solid var(--line); background: rgba(255,255,255,.97); backdrop-filter: blur(15px); display: grid; grid-template-columns: repeat(6, 1fr); }
   .bottom-nav button { border: 0; background: transparent; color: #7d8e95; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 9px; }
   .bottom-nav i { color: inherit; font-style: normal; font-size: 11px; font-weight: 900; }
   .bottom-nav button.active { color: #07809a; }

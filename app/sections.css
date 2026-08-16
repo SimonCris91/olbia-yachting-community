@@ -2,6 +2,7 @@
 .section-tabs button{border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:18px;font-size:12px;font-weight:700}
 .section-tabs button.active{background:var(--navy);color:#fff}
 .scan-page{max-width:850px;margin:70px auto;padding:60px 30px;text-align:center;background:linear-gradient(145deg,#e8f4f1,#f5efe5);border-radius:24px;display:none}
+.shop-page{display:none}
 .scan-page h1{font:500 clamp(38px,6vw,62px) Georgia,serif;margin:12px 0}
 .scan-page p{max-width:580px;margin:0 auto 25px;color:var(--muted);line-height:1.6}
 .scan-page button{border:0;border-radius:13px;background:var(--navy);color:#fff;padding:15px 21px;font-weight:750}
@@ -10,6 +11,7 @@
 .app-shell:not(.tab-home) .brand-showcase,.app-shell:not(.tab-home) .hero,.app-shell:not(.tab-home) .quick-grid,.app-shell:not(.tab-home) .dashboard-grid,.app-shell:not(.tab-home) .community,.app-shell:not(.tab-home) .yard-strip,.app-shell:not(.tab-home) .plans{display:none}
 .app-shell.tab-agenda .dashboard-grid{display:grid;margin-top:45px}
 .app-shell.tab-scan .scan-page{display:block}
+.app-shell.tab-shop .shop-page{display:block}
 .app-shell.tab-community .community{display:grid;min-height:calc(100vh - 198px)}
 .app-shell.tab-profile .yard-strip{display:flex}
 .app-shell.tab-profile .plans{display:grid}

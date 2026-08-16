@@ -10,6 +10,8 @@ import "./marketplace.css";
 import "./forms.css";
 import "./sections.css";
 import "./install.css";
+import "./legal.css";
+import "./shop.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 

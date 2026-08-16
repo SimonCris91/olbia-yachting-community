@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Tab = "home" | "agenda" | "scan" | "community" | "profile";
+type Tab = "home" | "agenda" | "scan" | "shop" | "community" | "profile";
 type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
 type AccountType = "private" | "operator" | "company" | "owner";
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
@@ -16,6 +16,17 @@ type Language = "it" | "en" | "fr" | "es" | "de";
 
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Assistant";
+
+const shopCategories = [
+  { id: "safety", icon: "S", name: "Giubbotti di salvataggio", note: "Sicurezza personale e dotazioni per l'equipaggio", source: "SVB", url: "https://www.svb24.com/en/category/life-jackets-buoyancy-aids", badge: "Popolare" },
+  { id: "pumps", icon: "P", name: "Pompe di sentina", note: "Pompe automatiche, manuali, giranti e accessori", source: "Osculati", url: "https://www.osculati.com/it/11141/16-pompe-sentina-giranti-autoclavi", badge: "Manutenzione" },
+  { id: "fenders", icon: "F", name: "Parabordi e accessori", note: "Protezione durante ormeggio e attracco", source: "Osculati", url: "https://www.osculati.com/it/11682/parabordi-boe", badge: "Popolare" },
+  { id: "ropes", icon: "C", name: "Cime da ormeggio", note: "Cime, impiombature e linee d'ancoraggio", source: "Osculati", url: "https://www.osculati.com/it/11001/ancoraggio-e-ormeggio", badge: "Essenziale" },
+  { id: "antifouling", icon: "A", name: "Antivegetativa", note: "Prodotti e accessori per carena e manutenzione", source: "SVB", url: "https://www.svb24.com/en/category/antifouling", badge: "Stagionale" },
+  { id: "instruments", icon: "N", name: "Strumentazione di bordo", note: "Sistemi strumenti, sensori e navigazione", source: "SVB", url: "https://www.svb24.com/en/category/instrument-systems", badge: "Tecnologia" },
+  { id: "toilets", icon: "W", name: "WC nautici e ricambi", note: "WC manuali, elettrici e parti di ricambio", source: "SVB", url: "https://www.svb24.com/en/category/marine-toilets", badge: "Ricambi" },
+  { id: "engines", icon: "M", name: "Ricambi motore", note: "Ricambi per motori entrobordo, piedi e trasmissioni", source: "SVB", url: "https://www.svb24.com/en/category/spares-for-boat-motors", badge: "Officina" },
+];
 
 const normalizeTelegramLink = (value: string) => {
   const cleaned = value.trim().replace(/^@/, "").replace(/^https?:\/\/(?:t\.me|telegram\.me)\//i, "").replace(/^t\.me\//i, "").replace(/^telegram\.me\//i, "").replace(/^\/+/, "");
@@ -160,6 +171,7 @@ export default function Home() {
   const [form, setForm] = useState({ title: "", category: "Meccanica", details: "" });
   const [operatorForm, setOperatorForm] = useState<{ name: string; category: string; locations: LocationKey[]; phone: string; email: string; website: string; telegram: string; note: string; tags: string }>({ name: "", category: "Meccanica marina", locations: [location], phone: "", email: "", website: "", telegram: "", note: "", tags: "" });
   const [toast, setToast] = useState("");
+  const [shopQuery, setShopQuery] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -234,6 +246,10 @@ export default function Home() {
     return `BUONA SERA, ${name}`;
   }, [profileName]);
   const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
+  const visibleShopCategories = useMemo(() => {
+    const query = shopQuery.trim().toLowerCase();
+    return query ? shopCategories.filter((item) => `${item.name} ${item.note} ${item.badge}`.toLowerCase().includes(query)) : shopCategories;
+  }, [shopQuery]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
     if (accountType === "private") return request.ownerId === "me";
@@ -535,7 +551,7 @@ export default function Home() {
   };
 
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small><div className="auth-legal-links"><a href="/privacy">Privacy</a><a href="/terms">Termini e trasparenza</a></div></div></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
@@ -562,6 +578,7 @@ export default function Home() {
         <button className={tab === "home" ? "active" : ""} onClick={() => goTo("home")}>Home</button>
         <button className={tab === "agenda" ? "active" : ""} onClick={() => goTo("agenda")}>Agenda</button>
         <button className={tab === "scan" ? "active" : ""} onClick={() => goTo("scan")}>Scansiona</button>
+        <button className={tab === "shop" ? "active" : ""} onClick={() => goTo("shop")}>Vetrina</button>
         <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>Interventi</button>
         <button className={tab === "profile" ? "active" : ""} onClick={() => goTo("profile")}>Profilo e piani</button>
       </nav>
@@ -583,8 +600,30 @@ export default function Home() {
       <section className="quick-grid" data-section="home" aria-label="Azioni rapide">
         <button className="quick primary" onClick={() => fileRef.current?.click()}><span className="quick-icon">O</span><b>Scatta una foto</b><small>Identifica un componente</small><i>-&gt;</i></button>
         <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={(event) => identifyPhoto(event.target.files?.[0])} />
-        <button className="quick" onClick={() => setChat(true)}><span className="quick-icon">Q</span><b>Cerca un prodotto</b><small>Ricambi e accessori</small><i>-&gt;</i></button>
+        <button className="quick" onClick={() => goTo("shop")}><span className="quick-icon">Q</span><b>Vetrina nautica</b><small>Ricambi e accessori esterni</small><i>-&gt;</i></button>
         <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Trova un professionista</b><small>Servizi a {location}</small><i>-&gt;</i></button>
+      </section>
+
+      <section className="shop-page" data-section="shop">
+        <div className="shop-hero">
+          <span className="eyebrow light">VETRINA NAUTICA</span>
+          <h1>Trova ciò che serve a bordo.</h1>
+          <p>Categorie ad alta domanda indicate dai cataloghi nautici consultati. L'acquisto avviene sempre sul sito del venditore esterno.</p>
+          <label className="shop-search"><span>Cerca nella vetrina</span><input value={shopQuery} onChange={(event) => setShopQuery(event.target.value)} placeholder="Es. pompa, parabordo, ricambio motore" /></label>
+        </div>
+        <div className="shop-disclosure"><b>Vetrina esterna, non checkout interno</b><span>Olbia Yachting Community non vende questi articoli, non incassa il pagamento e al momento non riceve commissioni. Prezzi, disponibilità, spedizione e resi dipendono dal venditore.</span></div>
+        <div className="shop-grid">
+          {visibleShopCategories.map((item) => <article className="shop-card" key={item.id}>
+            <div className="shop-card-icon">{item.icon}</div>
+            <span className="shop-badge">{item.badge}</span>
+            <h2>{item.name}</h2>
+            <p>{item.note}</p>
+            <small>Catalogo esterno: {item.source}</small>
+            <div><a href={`/api/out?id=${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer nofollow">Apri il catalogo</a><button onClick={() => { setChatText(`Aiutami a scegliere: ${item.name}. Quali dati della barca devo verificare prima dell'acquisto?`); setChat(true); }}>Chiedi all'AI</button></div>
+          </article>)}
+          {!visibleShopCategories.length && <div className="shop-empty"><b>Nessuna categoria trovata</b><span>Prova un termine più generale oppure chiedi direttamente allo Yachting Assistant.</span><button onClick={() => setChat(true)}>Apri assistente</button></div>}
+        </div>
+        <p className="shop-safety">Prima dell'acquisto verifica sempre dimensioni, tensione 12/24 V, portata, attacchi, codici originali e certificazioni richieste. Per dispositivi di sicurezza e componenti tecnici rivolgiti a un professionista qualificato.</p>
       </section>
 
       <section className="scan-page" data-section="scan">
@@ -689,12 +728,18 @@ export default function Home() {
         <div className={`plan-card telegram-card ${telegramHandle ? "selected" : ""}`}><div className="telegram-copy"><span>TELEGRAM</span><h3>Contatto diretto</h3><p>Salva il tuo username, canale o link Telegram. Lo ritrovi nel profilo e nei contatti rapidi degli operatori.</p></div><div className="telegram-form"><label><span>Username o link Telegram</span><input value={telegramHandle} onChange={(event) => setTelegramHandle(event.target.value)} placeholder="@nomeutente o https://t.me/..." /></label><button type="button" onClick={() => void saveTelegramProfile()}>Salva Telegram</button>{normalizeTelegramLink(telegramHandle) && <a className="telegram-link" href={normalizeTelegramLink(telegramHandle)} target="_blank" rel="noreferrer">Apri Telegram</a>}</div><small className="plan-note">Svuota il campo e salva di nuovo per rimuoverlo. Per automazioni vere serve un bot token; qui hai il collegamento operativo persistente, gratuito e pronto all'uso.</small></div>
       </section>
 
+      <footer className="legal-footer">
+        <div><img src="/yachting-community-logo.png" alt="" /><span><b>{BRAND_NAME}</b><small>Segno distintivo in uso. Nessuna dichiarazione di marchio registrato.</small></span></div>
+        <nav aria-label="Informazioni legali"><a href="/privacy">Privacy</a><a href="/terms">Termini e trasparenza</a></nav>
+        <p>© 2026 {BRAND_NAME}. Le risposte AI non sostituiscono tecnici qualificati né strumenti ufficiali di navigazione e sicurezza.</p>
+      </footer>
+
       <nav className="bottom-nav" aria-label="Navigazione principale">
-        {([["home", "H", "Home"], ["agenda", "OK", "Agenda"], ["scan", "O", "Scansiona"], ["community", "P", "Zona"], ["profile", "SC", "Profilo"]] as [Tab, string, string][]).map(([id, icon, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => goTo(id)}><i>{icon}</i><span>{label}</span></button>)}
+        {([["home", "H", "Home"], ["agenda", "OK", "Agenda"], ["scan", "O", "Scansiona"], ["shop", "V", "Vetrina"], ["community", "P", "Zona"], ["profile", "SC", "Profilo"]] as [Tab, string, string][]).map(([id, icon, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => goTo(id)}><i>{icon}</i><span>{label}</span></button>)}
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label={`Apri l'assistente ${BRAND_NAME}`}><span className="assistant-symbol" aria-hidden="true"><i /><i /><i /></span></button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <div className="message-actions"><button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button><button className="message-action shop-action" onClick={() => { setChat(false); goTo("shop"); }}>Apri vetrina</button></div>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => { setChat(false); goTo("shop"); }}>Vetrina prodotti</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">{BRAND_NAME.toUpperCase()} CANTIERI</span><h2>Commesse attive</h2><small className="plan-note">Anteprima gestionale: questi dati servono a mostrare la struttura dell'area cantieri.</small><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
