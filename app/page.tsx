@@ -534,8 +534,8 @@ export default function Home() {
     }
   };
 
-  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-community-logo.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
+  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
@@ -565,6 +565,11 @@ export default function Home() {
         <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>Interventi</button>
         <button className={tab === "profile" ? "active" : ""} onClick={() => goTo("profile")}>Profilo e piani</button>
       </nav>
+
+      <picture className="brand-showcase" data-section="home">
+        <source media="(max-width: 700px)" srcSet="/olbia-yachting-brand.png" />
+        <img src="/olbia-yachting-hero.png" alt="Olbia Yachting Community - Connect, Share, Sail" />
+      </picture>
 
       <section className="hero" data-section="home">
         <div>

@@ -7,7 +7,7 @@
 .scan-page button{border:0;border-radius:13px;background:var(--navy);color:#fff;padding:15px 21px;font-weight:750}
 .scan-page button span{font-size:20px;margin-right:7px}
 .scan-page small{display:block;color:var(--muted);margin-top:13px}
-.app-shell:not(.tab-home) .hero,.app-shell:not(.tab-home) .quick-grid,.app-shell:not(.tab-home) .dashboard-grid,.app-shell:not(.tab-home) .community,.app-shell:not(.tab-home) .yard-strip,.app-shell:not(.tab-home) .plans{display:none}
+.app-shell:not(.tab-home) .brand-showcase,.app-shell:not(.tab-home) .hero,.app-shell:not(.tab-home) .quick-grid,.app-shell:not(.tab-home) .dashboard-grid,.app-shell:not(.tab-home) .community,.app-shell:not(.tab-home) .yard-strip,.app-shell:not(.tab-home) .plans{display:none}
 .app-shell.tab-agenda .dashboard-grid{display:grid;margin-top:45px}
 .app-shell.tab-scan .scan-page{display:block}
 .app-shell.tab-community .community{display:grid;min-height:calc(100vh - 198px)}
