@@ -143,6 +143,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .reality-card span { display: block; margin-top: 4px; color: #b7cbd1; font-size: 12px; line-height: 1.5; }
 .demo-toggle { border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: transparent; color: #fff; padding: 10px 14px; font-size: 11px; font-weight: 800; white-space: nowrap; }
 .demo-toggle.active { background: #fff; color: var(--navy); }
+.request-launcher-modal { width: min(520px, calc(100vw - 32px)); padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: #fff; color: var(--ink); box-shadow: 0 22px 65px rgba(3,19,39,.25); }
+.request-launcher-modal h2 { margin: 8px 0 10px; color: var(--navy); font: 500 29px Georgia, serif; }
+.request-launcher-modal p { margin: 0; color: var(--muted); line-height: 1.6; }
+.request-launcher-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.request-launcher-actions button { min-height: 52px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 14px; background: #f7fbfb; color: var(--navy); font-size: 12px; font-weight: 850; }
+.request-launcher-actions .contact-email { border: 0; background: var(--blue); color: #fff; }
+.request-launcher-actions .contact-whatsapp { border: 0; background: #1fa463; color: #fff; }
+.request-launcher-actions button:hover { transform: translateY(-1px); }
 .data-badge { display: inline-flex; width: max-content; margin-top: 6px; padding: 5px 8px; border-radius: 999px; font-size: 9px; font-weight: 850; }
 .data-badge.live { background: #dff6f2; color: #08766e; }
 .data-badge.demo { background: #fff1c7; color: #735509; }
@@ -206,6 +214,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .chat-fab { right: 15px; bottom: 84px; width: 51px; height: 51px; }
   .chat { right: 12px; bottom: 144px; width: calc(100vw - 24px); }
   .toast { bottom: 84px; }
+  .request-launcher-modal { padding: 20px; }
+  .request-launcher-actions { grid-template-columns: 1fr; }
   .reality-card { flex-direction: column; align-items: flex-start; }
   .demo-toggle { width: 100%; }
   .location-checks { grid-template-columns: 1fr; }
