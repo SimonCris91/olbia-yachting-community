@@ -20,12 +20,12 @@ const ASSISTANT_NAME = "Yachting Assistant";
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
   { id: "pumps", symbol: "≈", tone: "water", name: "Pompe e impianti acqua", note: "Pompe di sentina, autoclavi, giranti, raccordi e accessori idraulici", source: "Osculati", providers: ["Osculati", "TREM", "SVB"], badge: "Impianti" },
-  { id: "mooring", symbol: "⚓", tone: "mooring", name: "Ormeggio e ancoraggio", note: "Ancore, catene, cime, parabordi, boe, bitte e accessori da banchina", source: "Osculati", providers: ["Osculati", "TREM", "Motomarine"], badge: "Essenziale" },
+  { id: "mooring", symbol: "⚓", tone: "mooring", name: "Ormeggio e ancoraggio", note: "Ancore, catene, cime, parabordi, boe, bitte e accessori da banchina", source: "Osculati", providers: ["Osculati", "TREM", "Motomarine", "Marine Hardware"], badge: "Essenziale" },
   { id: "electrical", symbol: "ϟ", tone: "electrical", name: "Elettrica, luci ed energia", note: "Batterie, caricabatterie, quadri, fanali, cavi, fusibili e inverter", source: "Motomarine", providers: ["Motomarine", "FNI", "Osculati", "SVB"], badge: "12 / 24 V" },
-  { id: "deck", symbol: "◇", tone: "deck", name: "Ferramenta e coperta", note: "Chiusure, maniglie, cerniere, oblò, passacavi e accessori di design", source: "Foresti & Suardi", providers: ["Foresti & Suardi", "Motomarine", "TREM"], badge: "Coperta" },
-  { id: "engines", symbol: "⚙", tone: "engine", name: "Ricambi motore", note: "Anodi, filtri, giranti, eliche, serbatoi e componenti per la manutenzione", source: "SVB", providers: ["SVB", "Motomarine", "FNI"], badge: "Officina" },
-  { id: "instruments", symbol: "⌖", tone: "electronics", name: "Strumentazione ed elettronica", note: "GPS, radar, VHF, sensori, bussole, antenne e sistemi strumenti", source: "SVB", providers: ["SVB", "Motomarine", "FNI"], badge: "Navigazione" },
-  { id: "antifouling", symbol: "◒", tone: "care", name: "Cura barca e carena", note: "Antivegetative, detergenti, lucidanti, sigillanti, vernici e utensili", source: "SVB", providers: ["SVB", "TREM", "Motomarine"], badge: "Manutenzione" },
+  { id: "deck", symbol: "◇", tone: "deck", name: "Ferramenta e coperta", note: "Chiusure, maniglie, cerniere, oblò, passacavi e accessori di design", source: "Foresti & Suardi", providers: ["Foresti & Suardi", "Marine Hardware", "Motomarine", "TREM"], badge: "Coperta" },
+  { id: "engines", symbol: "⚙", tone: "engine", name: "Ricambi motore", note: "Anodi, filtri, giranti, eliche, serbatoi e componenti per la manutenzione", source: "SVB", providers: ["SVB", "Marine Hardware", "Motomarine", "FNI"], badge: "Officina" },
+  { id: "instruments", symbol: "⌖", tone: "electronics", name: "Strumentazione ed elettronica", note: "GPS, radar, VHF, sensori, bussole, antenne e sistemi strumenti", source: "SVB", providers: ["SVB", "Marine Hardware", "Motomarine", "FNI"], badge: "Navigazione" },
+  { id: "antifouling", symbol: "◒", tone: "care", name: "Cura barca e carena", note: "Antivegetative, detergenti, lucidanti, sigillanti, vernici e utensili", source: "SVB", providers: ["SVB", "Marine Hardware", "TREM", "Motomarine"], badge: "Manutenzione" },
   { id: "comfort", symbol: "⌂", tone: "comfort", name: "Comfort e servizi di bordo", note: "WC nautici, cucina, frigoriferi, rubinetteria, stoviglie e arredo", source: "TREM", providers: ["TREM", "SVB", "Motomarine"], badge: "A bordo" },
   { id: "tender", symbol: "➤", tone: "tender", name: "Tender e tempo libero", note: "Tender, gonfiatori, accessori per battelli, alaggio e sport acquatici", source: "TREM", providers: ["TREM", "Motomarine", "Osculati"], badge: "Tempo libero" },
 ];
@@ -37,6 +37,7 @@ const shopSuppliers = [
   { id: "vendor-osculati", name: "Osculati", note: "Accessori nautici" },
   { id: "vendor-foresti", name: "Foresti & Suardi", note: "Ferramenta e design" },
   { id: "vendor-svb", name: "SVB", note: "Catalogo europeo" },
+  { id: "vendor-marine-hardware", name: "Marine Hardware", note: "Oltre 20.000 articoli nautici" },
 ];
 
 const normalizeTelegramLink = (value: string) => {

@@ -15,6 +15,7 @@ const destinations: Record<string, string> = {
   "vendor-osculati": "https://www.osculati.com/it",
   "vendor-foresti": "https://forestiesuardi.it/",
   "vendor-svb": "https://www.svb24.com/",
+  "vendor-marine-hardware": "https://www.marinehardware.it/eCommerceStd/main/navbar/prodotti.jsp",
 };
 
 const allowedHosts = new Set([
@@ -24,6 +25,7 @@ const allowedHosts = new Set([
   "www.fni.it", "fni.it",
   "www.trem.net", "trem.net",
   "www.forestiesuardi.it", "forestiesuardi.it",
+  "www.marinehardware.it", "marinehardware.it",
   "www.amazon.it", "amazon.it",
   "www.ebay.it", "ebay.it",
 ]);

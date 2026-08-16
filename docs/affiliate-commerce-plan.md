@@ -17,7 +17,7 @@ L’app non deve presentarsi come un negozio che vende direttamente. Il percorso
 - Amazon Programma Affiliazione Italia: `https://programma-affiliazione.amazon.it/`
 - eBay Partner Network Italia: `https://partnernetwork.ebay.it/our-program`
 
-La vetrina consulta inoltre i cataloghi ufficiali di Motomarine, Forniture Nautiche Italiane (FNI), TREM, Osculati, Foresti & Suardi e SVB. Non è stato verificato un programma affiliato pubblico ufficiale per questi fornitori nella ricerca preliminare. Prima di trasformare i loro collegamenti in affiliati occorre chiedere direttamente alle aziende o verificare la loro presenza su una rete di affiliazione.
+La vetrina consulta inoltre i cataloghi ufficiali di Motomarine, Forniture Nautiche Italiane (FNI), TREM, Osculati, Foresti & Suardi, SVB e Marine Hardware. Non è stato verificato un programma affiliato pubblico ufficiale per questi fornitori nella ricerca preliminare. Prima di trasformare i loro collegamenti in affiliati occorre chiedere direttamente alle aziende o verificare la loro presenza su una rete di affiliazione.
 
 ## Integrazione tecnica già predisposta
 
@@ -29,7 +29,7 @@ Il valore deve essere un oggetto JSON che associa l’identificativo della categ
 
 `{"pumps":"https://www.amazon.it/...link-generato...","engines":"https://www.ebay.it/...link-generato..."}`
 
-Sono consentite soltanto destinazioni HTTPS verso SVB, Osculati, Motomarine, FNI, TREM, Foresti & Suardi, Amazon Italia ed eBay Italia. Un dominio diverso viene rifiutato e il collegamento normale resta operativo.
+Sono consentite soltanto destinazioni HTTPS verso SVB, Osculati, Motomarine, FNI, TREM, Foresti & Suardi, Marine Hardware, Amazon Italia ed eBay Italia. Un dominio diverso viene rifiutato e il collegamento normale resta operativo.
 
 ## Obblighi prima dell’attivazione
 
