@@ -14,10 +14,10 @@ import "./install.css";
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Barcaora AI - Your AI Yachting Assistant",
-  description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione.",
+  title: "Olbia Yachting Community - Yachting Assistant",
+  description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione con la community di Olbia.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/barcaora-logo.png", apple: "/barcaora-logo.png" },
+  icons: { icon: "/yachting-community-logo.png", apple: "/yachting-community-logo.png" },
   themeColor: "#09283b",
 };
 
