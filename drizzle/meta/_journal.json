@@ -15,6 +15,13 @@
       "when": 1786272100000,
       "tag": "0002_telegram_profiles_operators",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786957200000,
+      "tag": "0003_outreach_events",
+      "breakpoints": true
     }
   ]
 }

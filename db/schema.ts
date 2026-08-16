@@ -59,3 +59,13 @@ export const workspaceItems = sqliteTable("workspace_items", {
   done: integer("done", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("idx_workspace_items_owner_kind").on(table.ownerUserId, table.kind)]);
+
+export const outreachEvents = sqliteTable("outreach_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  actorId: text("actor_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  channel: text("channel", { enum: ["email", "whatsapp"] }).notNull(),
+  location: text("location").notNull(),
+  reference: text("reference").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_outreach_events_provider_channel_created").on(table.providerId, table.channel, table.createdAt)]);

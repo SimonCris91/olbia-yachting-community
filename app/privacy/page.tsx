@@ -20,6 +20,8 @@ export default function PrivacyPage() {
 
       <section><h2>Spazio personale e community</h2><p>Agenda e lista acquisti sono associate all’account autenticato. Le richieste di intervento possono essere visibili agli operatori e alle ditte in base a ruolo e località. Telefono, email, sito e Telegram inseriti in un profilo operatore sono destinati alla pubblicazione nella community: non inserirli se non vuoi renderli visibili agli utenti autorizzati.</p></section>
 
+      <section><h2>Contatti verso aziende</h2><p>Quando l’utente sceglie di aprire Email o WhatsApp dalla directory, l’app registra azienda selezionata, canale, località, codice di riferimento, identificativo account o stato anonimo e data/ora. Questi dati servono a misurare l’utilizzo della directory e le possibili richieste commerciali. Il testo del messaggio, il destinatario effettivo e l’eventuale invio non vengono salvati dall’app. Il messaggio viene soltanto precompilato e resta sotto il controllo dell’utente. Il periodo definitivo di conservazione dovrà essere indicato prima del lancio commerciale.</p></section>
+
       <section><h2>Dati locali e geolocalizzazione</h2><p>Lingua, località scelta, piano, ruolo e modalità demo possono essere conservati nel browser. La versione attuale non legge automaticamente la posizione GPS: la località viene selezionata dall’utente.</p></section>
 
       <section><h2>Fornitori e collegamenti esterni</h2><p>Il servizio utilizza l’infrastruttura di autenticazione e hosting di ChatGPT/Sites e la OpenAI Responses API. I collegamenti a Telegram, siti di operatori e fonti web portano a servizi esterni con proprie informative.</p></section>

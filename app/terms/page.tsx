@@ -20,6 +20,8 @@ export default function TermsPage() {
 
       <section><h2>Operatori e richieste</h2><p>I profili degli operatori possono essere pubblicati direttamente dagli utenti. La dicitura “Verificato” viene mostrata solo quando il relativo stato è presente nel sistema; in assenza di tale dicitura, l’app non garantisce identità, qualifiche, disponibilità, prezzi o qualità del servizio. Ogni accordo operativo rimane tra le parti coinvolte.</p></section>
 
+      <section><h2>Directory e contatti esterni</h2><p>Le aziende elencate tramite fonti pubbliche non sono presentate come partner, affiliate o iscritte alla piattaforma. I pulsanti Email e WhatsApp aprono un’app esterna con una bozza precompilata: l’utente deve controllarla e confermare personalmente l’invio. Olbia Yachting Community non garantisce che il messaggio venga inviato, letto o accettato e registra soltanto l’apertura del canale con un codice di riferimento.</p></section>
+
       <section><h2>Marchio e identità grafica</h2><p>“Olbia Yachting Community”, il logo nautico, la composizione grafica e gli elementi visivi sono utilizzati come identità del progetto. Non viene utilizzato il simbolo ® e non viene dichiarata una registrazione del marchio. I termini geografici o descrittivi restano utilizzabili nei limiti previsti dalla legge; non è consentito copiare la composizione grafica del progetto o presentarsi come servizio ufficiale senza autorizzazione.</p></section>
 
       <section><h2>Servizi esterni</h2><p>Risultati web, collegamenti, prezzi e disponibilità possono cambiare. L’utente deve verificarli direttamente presso la fonte. Telegram e gli altri siti collegati sono servizi indipendenti.</p></section>

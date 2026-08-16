@@ -13,9 +13,10 @@ type CommunityRequest = { id: number; ownerId: string; title: string; details: s
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; telegram?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
+type DirectoryProvider = { id: string; name: string; category: string; locations: LocationKey[]; services: string[]; note: string; website: string; email?: string; whatsapp?: string; phone?: string };
 
 const BRAND_NAME = "Olbia Yachting Community";
-const ASSISTANT_NAME = "Yachting Assistant";
+const ASSISTANT_NAME = "Marinaio AI";
 
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
@@ -123,6 +124,24 @@ const operators: Operator[] = [
   { id: 22, name: "Cervo Galley Supply", category: "Cambusa e forniture", locations: ["Porto Cervo"], distance: "0.9 km", rating: "4.8", response: "Consegna oggi", premium: true, tags: ["Cambusa", "Vini", "Forniture"], note: "Forniture bordo e consegna diretta in porto." },
 ];
 
+const publicDirectoryProviders: DirectoryProvider[] = [
+  { id: "cantieri-olbia", name: "Cantieri di Olbia", category: "Cantieri & refit", locations: ["Olbia"], services: ["Refit", "Assistenza tecnica", "Motori", "Alaggio"], note: "Cantiere aperto tutto l'anno con riparazione, manutenzione, allestimento e trasformazione yacht.", website: "https://www.cantieridiolbia.com/", email: "info@cantieridiolbia.com", phone: "+39 0789 58645" },
+  { id: "isola-bianca", name: "Cantiere Navale Isola Bianca", category: "Cantieri & refit", locations: ["Olbia"], services: ["Rimessaggio", "Refitting", "Restyling", "Service H24"], note: "Cantiere di Olbia per barche a motore e a vela, con rimessaggio, riparazione e refit.", website: "https://www.isolabianca.it/", email: "info@isolabianca.it", whatsapp: "393499850537", phone: "+39 0789 21018" },
+  { id: "nautica-acqua", name: "Nautica Acqua", category: "Cantieri & refit", locations: ["Olbia"], services: ["Refitting", "Motoristica", "Falegnameria", "Vetroresina"], note: "Cantiere a Cala Saccaia con officina, verniciatura, falegnameria e lavorazioni in vetroresina.", website: "https://www.nauticaacqua.it/", email: "info@nauticaacqua.it" },
+  { id: "cs-nautica", name: "C.S. Nautica", category: "Cantieri & refit", locations: ["Olbia"], services: ["Rimessaggio", "Assistenza", "Refitting", "Carenaggio"], note: "Cantiere nautico di Olbia con manutenzione, assistenza, rimessaggio e allestimenti.", website: "https://csnautica.it/", email: "info@csnautica.it", phone: "+39 349 5755394" },
+  { id: "olbia-yacht-service", name: "Olbia Yacht Service", category: "Cantieri & refit", locations: ["Olbia"], services: ["Rimessaggio", "Assistenza yacht", "Cala Saccaia"], note: "Servizi e assistenza per imbarcazioni con sede operativa a Cala Saccaia, Olbia.", website: "https://www.olbiayachtservice.it/", email: "info@olbiayachtservice.it", phone: "+39 0789 599266" },
+  { id: "porto-rotondo-yachting", name: "Porto Rotondo Yachting", category: "Cantieri & refit", locations: ["Olbia", "Porto Rotondo"], services: ["Rimessaggio", "Assistenza", "Cantiere", "Barche fino a 50 piedi"], note: "Cantiere a Cala Saccaia con area coperta, piazzale e assistenza nei porti della zona.", website: "https://www.portorotondoyachting.com/sito/it/cantiere-nautico", email: "info@portorotondoyachting.com", phone: "+39 0789 34258" },
+  { id: "marina-porto-rotondo", name: "Marina di Porto Rotondo", category: "Ormeggi e marina", locations: ["Porto Rotondo"], services: ["Posti barca", "Mega yacht", "Servizi marina", "Ormeggio"], note: "Marina turistica di Porto Rotondo con posti barca e servizi per vela, motore e mega yacht.", website: "https://www.marinadiportorotondo.it/" },
+  { id: "ds-service", name: "DS Service", category: "Elettrica nautica", locations: ["Olbia"], services: ["Impianti elettrici", "Elettronica", "220/380 V", "Diagnostica"], note: "Impianti elettrici ed elettronici di bordo, illuminazione, ricarica, inverter e assistenza tecnica.", website: "https://www.ds-service.net/", phone: "+39 352 0860729" },
+  { id: "elmec-nautica", name: "Elmec Nautica", category: "Elettronica", locations: ["Olbia"], services: ["GPS e radar", "Autopiloti", "VHF", "Reti di bordo"], note: "Fornitura, installazione, configurazione e assistenza per apparecchiature elettroniche navali.", website: "https://www.elmecnautica.com/", email: "elmecnautica@gmail.com", phone: "+39 329 6358037" },
+  { id: "nautical-connect", name: "Nautical Connect", category: "Assistenza yacht", locations: ["Olbia", "Porto Cervo"], services: ["Supporto tecnico", "Ricambi", "Yacht management", "Charter"], note: "Servizi tecnici e operativi per yacht con sede a Olbia e attività in Costa Smeralda.", website: "https://www.nauticalconnect.com/", email: "info@nauticalconnect.com", phone: "+39 392 3332525" },
+  { id: "ysa-yacht-service", name: "YSA Yacht Service", category: "Concierge yacht", locations: ["Porto Cervo"], services: ["Formalità", "Ormeggi", "Provisioning", "Riparazioni"], note: "Assistenza yacht a Porto Cervo per formalità, prenotazioni, forniture e coordinamento lavori.", website: "https://www.ysayachtservice.com/", email: "info@ysayachtservice.com", whatsapp: "393280230712", phone: "+39 328 0230712" },
+  { id: "sea-world-services", name: "Sea World Services", category: "Concierge yacht", locations: ["Porto Cervo"], services: ["Yacht service", "Logistica", "Provisioning", "Assistenza"], note: "Servizi nautici e assistenza su misura per yacht, equipaggi e regate in Costa Smeralda.", website: "https://seaworldservices.com/it/sws-servizi-ita/", email: "sws@swsportocervo.com", phone: "+39 0789 91693" },
+  { id: "sea-sardinia-services", name: "Sea Sardinia Services", category: "Concierge yacht", locations: ["Olbia", "Porto Cervo"], services: ["Provisioning", "Berth reservation", "Winter storage", "Emergenze"], note: "Provisioning, prenotazioni ormeggio, concierge e coordinamento dell'assistenza tecnica.", website: "https://www.seasardiniaservices.com/", email: "info@seasardiniaservice.com", phone: "+39 320 0588581" },
+  { id: "yachting-group", name: "Yachting Group", category: "Cambusa e forniture", locations: ["Olbia"], services: ["Provisioning", "Cambusa", "Laundry", "Boat accessories"], note: "Servizi yacht e forniture con consegna a bordo dalla base di Portisco Marina.", website: "https://www.yachtinggroup.it/", email: "info@yachtingroup.com", whatsapp: "393510937765", phone: "+39 351 0937765" },
+  { id: "chiara-service", name: "Chiara Service", category: "Pulizia e detailing", locations: ["Olbia", "Porto Cervo", "Porto Rotondo"], services: ["Lavanderia", "Teak", "Lucidatura", "Sanificazione"], note: "Pulizia e cura yacht, lavanderia con ritiro a bordo, teak, acciai e sanificazione interni.", website: "https://www.chiaraservice.it/servizi", email: "info@chiaraservice.it", phone: "+39 393 9149340" },
+];
+
 const demoRequests: CommunityRequest[] = [
   { id: 9001, ownerId: "demo-owner-1", title: "Controllo caricabatterie in banchina", details: "M/Y 13 m - tensione instabile batterie servizi. Richiesta entro oggi.", category: "Elettrica", location: "Olbia", created: "12 min fa", status: "Aperta" },
   { id: 9002, ownerId: "demo-owner-2", title: "Girante e controllo raffreddamento", details: "Motore entrobordo, temperatura alta al minimo. Barca a Olbia.", category: "Meccanica", location: "Olbia", created: "35 min fa", status: "Aperta" },
@@ -135,6 +154,22 @@ const categoryMatches = (requestCategory: string, serviceCategory: string) => {
   const request = requestCategory.toLowerCase();
   const service = serviceCategory.toLowerCase();
   return service.includes(request) || request.includes(service) || (request === "meccanica" && service.includes("meccanica")) || (request === "elettrica" && service.includes("elettrica")) || (request === "pulizia" && service.includes("pulizia")) || (request === "refit" && service.includes("refit"));
+};
+
+const directoryMatchesCategory = (provider: DirectoryProvider, category: string) => {
+  const text = `${provider.category} ${provider.services.join(" ")} ${provider.note}`.toLowerCase();
+  const selected = category.toLowerCase();
+  if (selected.includes("cantieri") || selected.includes("refit")) return /cantier|refit|rimessaggio|restyling/.test(text);
+  if (selected.includes("meccanica")) return /meccanic|motor|officina|riparazion/.test(text);
+  if (selected.includes("elettrica")) return /elettric|elettronic|220\/380|batter/.test(text);
+  if (selected.includes("elettronica")) return /elettronic|gps|radar|vhf|strument/.test(text);
+  if (selected.includes("ricambi")) return /ricamb|fornitur|accessori/.test(text);
+  if (selected.includes("concierge")) return /concierge|provisioning|yacht service|formalità/.test(text);
+  if (selected.includes("pulizia")) return /pulizia|lavanderia|teak|sanific|lucidatura/.test(text);
+  if (selected.includes("tender")) return /tender|charter|battell/.test(text);
+  if (selected.includes("ormeggi") || selected.includes("marina")) return /ormeggi|marina|posti barca|berth/.test(text);
+  if (selected.includes("cambusa") || selected.includes("forniture")) return /cambusa|provisioning|fornitur|food/.test(text);
+  return categoryMatches(provider.category, category);
 };
 
 function RichText({ text }: { text: string }) {
@@ -164,7 +199,7 @@ export default function Home() {
   const [chatText, setChatText] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatStatus, setChatStatus] = useState("");
-  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
+  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao, sono Marinaio AI. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -184,6 +219,8 @@ export default function Home() {
   const [operatorForm, setOperatorForm] = useState<{ name: string; category: string; locations: LocationKey[]; phone: string; email: string; website: string; telegram: string; note: string; tags: string }>({ name: "", category: "Meccanica marina", locations: [location], phone: "", email: "", website: "", telegram: "", note: "", tags: "" });
   const [toast, setToast] = useState("");
   const [shopQuery, setShopQuery] = useState("");
+  const [directoryQuery, setDirectoryQuery] = useState("");
+  const [directoryRequest, setDirectoryRequest] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -269,7 +306,15 @@ export default function Home() {
     return request.location === location;
   });
   const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : realOperators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)), [location, operatorCategory, showDemoData, realOperators]);
-  const operatorCount = (category: string) => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
+  const visibleDirectoryProviders = useMemo(() => {
+    const query = directoryQuery.trim().toLowerCase();
+    return publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && (!operatorCategory || directoryMatchesCategory(provider, operatorCategory)) && (!query || `${provider.name} ${provider.category} ${provider.services.join(" ")} ${provider.note}`.toLowerCase().includes(query)));
+  }, [directoryQuery, location, operatorCategory]);
+  const operatorCount = (category: string) => {
+    const registered = showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
+    const directory = publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && directoryMatchesCategory(provider, category)).length;
+    return registered + directory;
+  };
 
   const notify = (message: string) => {
     setToast(message);
@@ -344,6 +389,32 @@ export default function Home() {
     setSelectedOperator(operator);
     setForm({ title: `Intervento ${operator.category}`, category: operator.category.includes("Elettrica") ? "Elettrica" : operator.category.includes("Elettronica") ? "Elettronica" : operator.category.includes("Refit") || operator.category.includes("Cantieri") ? "Refit" : "Meccanica", details: `${operator.name} - ${location}. Descrivi qui il problema, barca e urgenza.` });
     setFormMode("request");
+  };
+
+  const openProviderContact = (provider: DirectoryProvider, channel: "email" | "whatsapp") => {
+    const reference = `OYC-${provider.id.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+    const requestText = directoryRequest.trim() || "Descrivi qui il problema, l'imbarcazione e l'urgenza.";
+    const subject = `Olbia Yachting Community Request · ${reference}`;
+    const body = [
+      "Buongiorno,",
+      "",
+      "invio questa richiesta tramite Olbia Yachting Community.",
+      `Azienda: ${provider.name}`,
+      `Zona: ${location}`,
+      `Richiesta: ${requestText}`,
+      `Riferimento: ${reference}`,
+      "",
+      "Attendo un vostro riscontro. Grazie.",
+    ].join("\n");
+    const event = JSON.stringify({ providerId: provider.id, channel, location, reference });
+    navigator.sendBeacon("/api/outreach", new Blob([event], { type: "application/json" }));
+    if (channel === "email" && provider.email) {
+      window.location.href = `mailto:${provider.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    if (channel === "whatsapp" && provider.whatsapp) {
+      window.location.href = `https://wa.me/${provider.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`${subject}\n\n${body}`)}`;
+    }
   };
 
   const openOperatorEditor = () => {
@@ -637,7 +708,7 @@ export default function Home() {
             <div className="shop-providers" aria-label={`Fornitori per ${item.name}`}>{item.providers.map((provider) => <span key={provider}>{provider}</span>)}</div>
             <div className="shop-actions"><a href={`/api/out?id=${encodeURIComponent(item.id)}`} target="_blank" rel="noreferrer nofollow sponsored">Apri il catalogo</a><button onClick={() => { setChatText(`Aiutami a scegliere: ${item.name}. Quali dati della barca devo verificare prima dell'acquisto?`); setChat(true); }}>Chiedi all'AI</button></div>
           </article>)}
-          {!visibleShopCategories.length && <div className="shop-empty"><b>Nessuna categoria trovata</b><span>Prova un termine più generale oppure chiedi direttamente allo Yachting Assistant.</span><button onClick={() => setChat(true)}>Apri assistente</button></div>}
+          {!visibleShopCategories.length && <div className="shop-empty"><b>Nessuna categoria trovata</b><span>Prova un termine più generale oppure chiedi direttamente a Marinaio AI.</span><button onClick={() => setChat(true)}>Apri assistente</button></div>}
         </div>
         <p className="shop-safety">Prima dell'acquisto verifica sempre dimensioni, tensione 12/24 V, portata, attacchi, codici originali e certificazioni richieste. Per dispositivi di sicurezza e componenti tecnici rivolgiti a un professionista qualificato.</p>
       </section>
@@ -711,7 +782,7 @@ export default function Home() {
           </div>
         </div>
         <div className="operator-area">
-          <div className="service-grid">{currentLocation.services.map((service) => { const count = operatorCount(service.name); return <button className={operatorCategory === service.name ? "active" : ""} key={service.name} onClick={() => openOperators(service.name)}><i>{service.icon}</i><span><b>{service.name}</b><small>{count === 1 ? "1 operatore" : `${count} operatori`}</small></span><em>&gt;</em></button>; })}</div>
+          <div className="service-grid">{currentLocation.services.map((service) => { const count = operatorCount(service.name); return <button className={operatorCategory === service.name ? "active" : ""} key={service.name} onClick={() => openOperators(service.name)}><i>{service.icon}</i><span><b>{service.name}</b><small>{count === 1 ? "1 riferimento" : `${count} riferimenti`}</small></span><em>&gt;</em></button>; })}</div>
           <div className="operator-panel">
             <div className="operator-head"><div><span className="eyebrow light">OPERATORI DISPONIBILI</span><h3>{operatorCategory ?? `Tutti a ${location}`}</h3></div><div className="operator-head-actions">{operatorCategory && <button onClick={() => { setOperatorCategory(null); setWebResult(null); }}>Tutti</button>}<button onClick={verifyOperatorsOnWeb} disabled={webLoading}>{webLoading ? "Verifico..." : "Verifica sul web"}</button></div></div>
             <p className="operator-note">{showDemoData ? "Elenco locale in modalita demo: usa Verifica sul web per controllare aziende reali e fonti." : visibleOperators.length ? "Archivio operatori reale collegato al database. I dati mostrati qui arrivano dai profili pubblicati dagli operatori." : "Nessun operatore reale pubblicato in questa zona. Un operatore o una ditta puo creare adesso il proprio profilo."}</p>
@@ -729,6 +800,21 @@ export default function Home() {
               </article>)}
             </div>
           </div>
+          <section className="public-directory" aria-labelledby="directory-title">
+            <div className="directory-head"><div><span>DIRECTORY PUBBLICA</span><h3 id="directory-title">Aziende e servizi reali</h3><p>Informazioni sintetizzate dai siti ufficiali. Non indicano iscrizione, disponibilità immediata o collaborazione con la piattaforma.</p></div><label><span>Cerca servizio o azienda</span><input value={directoryQuery} onChange={(event) => setDirectoryQuery(event.target.value)} placeholder="Es. elettricista, refit, lavanderia" /></label></div>
+            <label className="directory-request"><span>La tua richiesta</span><textarea value={directoryRequest} onChange={(event) => setDirectoryRequest(event.target.value)} rows={3} maxLength={800} placeholder="Es. problema all'impianto elettrico, yacht 15 m, intervento richiesto domani..." /><small>Scrivila una volta: verrà inserita nel messaggio. L'app non salva il testo e non invia senza la tua conferma.</small></label>
+            <div className="directory-list">
+              {visibleDirectoryProviders.map((provider) => <article className="directory-card" key={provider.id}>
+                <div className="directory-title"><span aria-hidden="true">{provider.name.slice(0, 1)}</span><div><b>{provider.name}</b><small>Fonte pubblica · {provider.locations.join(" / ")}</small></div></div>
+                <p>{provider.note}</p>
+                <div className="directory-tags"><strong>{provider.category}</strong>{provider.services.map((service) => <span key={service}>{service}</span>)}</div>
+                {(provider.email || provider.whatsapp || provider.phone) && <div className="directory-contact-line">{provider.email && <span>{provider.email}</span>}{provider.phone && <span>{provider.phone}</span>}</div>}
+                <div className="directory-actions"><a href={provider.website} target="_blank" rel="noreferrer nofollow external">Sito ufficiale</a>{provider.email && <button className="contact-email" onClick={() => openProviderContact(provider, "email")}>Apri Email</button>}{provider.whatsapp && <button className="contact-whatsapp" onClick={() => openProviderContact(provider, "whatsapp")}>Apri WhatsApp</button>}<button onClick={() => { setChatText(`Marinaio AI, aiutami a capire se l'azienda ${provider.name} è adatta per questa richiesta: ${directoryRequest}`); setChat(true); }}>Chiedi a Marinaio AI</button></div>
+                {(provider.email || provider.whatsapp) && <small className="directory-consent">Si apre l'app scelta con un messaggio precompilato. Sarai tu a controllarlo e inviarlo.</small>}
+              </article>)}
+              {!visibleDirectoryProviders.length && <div className="directory-empty"><b>Nessun risultato in questa zona</b><span>Prova un'altra categoria o un termine più generale.</span></div>}
+            </div>
+          </section>
         </div>
       </section>
 
