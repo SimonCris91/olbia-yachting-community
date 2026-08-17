@@ -14,6 +14,22 @@ type Operator = { id: number; name: string; category: string; locations: Locatio
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
 type DirectoryProvider = { id: string; name: string; category: string; locations: LocationKey[]; services: string[]; note: string; website: string; email?: string; whatsapp?: string; phone?: string };
+type InboxStatus = "Nuova" | "Assegnata" | "In lavorazione" | "Chiusa";
+type WhatsappInboxItem = {
+  id: string;
+  client: string;
+  channel: string;
+  preview: string;
+  time: string;
+  priority: "Alta" | "Media" | "Bassa";
+  status: InboxStatus;
+  category: string;
+  boat: string;
+  location: string;
+  issue: string;
+  missing: string[];
+  suggestedOperator: string;
+};
 type RequestLauncher = {
   title: string;
   category: string;
@@ -61,7 +77,7 @@ const whatsappActionSteps = [
   "Crea intervento e salva in archivio",
 ];
 
-const whatsappInboxItems = [
+const whatsappInboxItems: WhatsappInboxItem[] = [
   {
     id: "thread-salpa-ancora",
     client: "Marco R.",
@@ -84,7 +100,7 @@ const whatsappInboxItems = [
     preview: "Serve pulizia teak e lavaggio ponte entro domani a Porto Cervo.",
     time: "10:02",
     priority: "Media",
-    status: "Da assegnare",
+    status: "Assegnata",
     category: "Pulizia e detailing",
     boat: "Yacht 21 m",
     location: "Porto Cervo",
@@ -99,7 +115,7 @@ const whatsappInboxItems = [
     preview: "Mi serve un ricambio per pompa di sentina, ho foto e codice parziale.",
     time: "11:27",
     priority: "Media",
-    status: "In analisi",
+    status: "In lavorazione",
     category: "Ricambi nautici",
     boat: "Saver 690",
     location: "Olbia",
@@ -108,6 +124,8 @@ const whatsappInboxItems = [
     suggestedOperator: "Sardinia Nautic Parts",
   },
 ];
+
+const inboxStatusOrder: InboxStatus[] = ["Nuova", "Assegnata", "In lavorazione", "Chiusa"];
 
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
@@ -298,6 +316,8 @@ export default function Home() {
   const [telegramHandle, setTelegramHandle] = useState("");
   const [language, setLanguage] = useState<Language>("it");
   const [showDemoData, setShowDemoData] = useState(false);
+  const [whatsappThreads, setWhatsappThreads] = useState<WhatsappInboxItem[]>(whatsappInboxItems);
+  const [inboxStatusFilter, setInboxStatusFilter] = useState<InboxStatus | "Tutte">("Tutte");
   const [selectedWhatsappThreadId, setSelectedWhatsappThreadId] = useState(whatsappInboxItems[0].id);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
@@ -403,7 +423,15 @@ export default function Home() {
     const query = directoryQuery.trim().toLowerCase();
     return publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && (!operatorCategory || directoryMatchesCategory(provider, operatorCategory)) && (!query || `${provider.name} ${provider.category} ${provider.services.join(" ")} ${provider.note}`.toLowerCase().includes(query)));
   }, [directoryQuery, location, operatorCategory]);
-  const selectedWhatsappThread = useMemo(() => whatsappInboxItems.find((item) => item.id === selectedWhatsappThreadId) ?? whatsappInboxItems[0], [selectedWhatsappThreadId]);
+  const filteredWhatsappThreads = useMemo(() => inboxStatusFilter === "Tutte" ? whatsappThreads : whatsappThreads.filter((item) => item.status === inboxStatusFilter), [inboxStatusFilter, whatsappThreads]);
+  const selectedWhatsappThread = useMemo(() => filteredWhatsappThreads.find((item) => item.id === selectedWhatsappThreadId) ?? filteredWhatsappThreads[0] ?? whatsappThreads[0], [filteredWhatsappThreads, selectedWhatsappThreadId, whatsappThreads]);
+  const whatsappStatusCounts = useMemo(() => ({
+    Tutte: whatsappThreads.length,
+    Nuova: whatsappThreads.filter((item) => item.status === "Nuova").length,
+    Assegnata: whatsappThreads.filter((item) => item.status === "Assegnata").length,
+    "In lavorazione": whatsappThreads.filter((item) => item.status === "In lavorazione").length,
+    Chiusa: whatsappThreads.filter((item) => item.status === "Chiusa").length,
+  }), [whatsappThreads]);
   const operatorCount = (category: string) => {
     const registered = showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
     const directory = publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && directoryMatchesCategory(provider, category)).length;
@@ -426,6 +454,19 @@ export default function Home() {
     setSelectedOperator(null);
     setWebResult(null);
     notify(`Localita impostata su ${nextLocation}`);
+  };
+
+  const updateWhatsappThreadStatus = (threadId: string, nextStatus: InboxStatus) => {
+    setWhatsappThreads((current) => current.map((item) => item.id === threadId ? { ...item, status: nextStatus } : item));
+    notify(`Richiesta aggiornata: ${nextStatus}`);
+  };
+
+  const advanceWhatsappThread = (threadId: string) => {
+    const current = whatsappThreads.find((item) => item.id === threadId);
+    if (!current) return;
+    const currentIndex = inboxStatusOrder.indexOf(current.status);
+    const nextStatus = inboxStatusOrder[Math.min(currentIndex + 1, inboxStatusOrder.length - 1)];
+    updateWhatsappThreadStatus(threadId, nextStatus);
   };
 
   const saveWorkspaceItem = async (kind: "task" | "purchase", title: string, details: string) => {
@@ -900,9 +941,19 @@ export default function Home() {
           <h2>Così lavora l’azienda dopo il messaggio.</h2>
           <p>Le richieste entrano da WhatsApp Business, vengono lette subito e diventano ticket ordinati con priorità, zona, barca e prossimo passo.</p>
         </div>
+        <div className="whatsapp-inbox-filters" aria-label="Filtri stato richieste">
+          {(["Tutte", ...inboxStatusOrder] as const).map((status) => <button key={status} className={inboxStatusFilter === status ? "active" : ""} onClick={() => {
+            setInboxStatusFilter(status);
+            const firstThread = (status === "Tutte" ? whatsappThreads : whatsappThreads.filter((item) => item.status === status))[0];
+            if (firstThread) setSelectedWhatsappThreadId(firstThread.id);
+          }}>
+            <span>{status}</span>
+            <b>{whatsappStatusCounts[status]}</b>
+          </button>)}
+        </div>
         <div className="whatsapp-inbox-board">
           <aside className="whatsapp-inbox-list" aria-label="Conversazioni ricevute">
-            {whatsappInboxItems.map((item) => <button key={item.id} className={`whatsapp-inbox-item ${selectedWhatsappThread.id === item.id ? "active" : ""}`} onClick={() => setSelectedWhatsappThreadId(item.id)}>
+            {filteredWhatsappThreads.map((item) => <button key={item.id} className={`whatsapp-inbox-item ${selectedWhatsappThread?.id === item.id ? "active" : ""}`} onClick={() => setSelectedWhatsappThreadId(item.id)}>
               <div className="whatsapp-inbox-item-head">
                 <b>{item.client}</b>
                 <small>{item.time}</small>
@@ -913,8 +964,9 @@ export default function Home() {
                 <span>{item.status}</span>
               </div>
             </button>)}
+            {!filteredWhatsappThreads.length && <div className="whatsapp-inbox-empty"><b>Nessuna richiesta in questo stato</b><span>Qui compariranno le conversazioni WhatsApp appena entrano o cambiano fase.</span></div>}
           </aside>
-          <article className="whatsapp-ticket-card" aria-label="Dettaglio richiesta selezionata">
+          {selectedWhatsappThread && <article className="whatsapp-ticket-card" aria-label="Dettaglio richiesta selezionata">
             <div className="whatsapp-ticket-head">
               <div>
                 <span>{selectedWhatsappThread.channel}</span>
@@ -924,6 +976,12 @@ export default function Home() {
                 <small>{selectedWhatsappThread.priority}</small>
                 <small>{selectedWhatsappThread.status}</small>
               </div>
+            </div>
+            <div className="whatsapp-ticket-progress" aria-label="Avanzamento richiesta">
+              {inboxStatusOrder.map((status) => <div key={status} className={`whatsapp-progress-step ${inboxStatusOrder.indexOf(status) <= inboxStatusOrder.indexOf(selectedWhatsappThread.status) ? "done" : ""}`}>
+                <i>{inboxStatusOrder.indexOf(status) + 1}</i>
+                <span>{status}</span>
+              </div>)}
             </div>
             <div className="whatsapp-ticket-grid">
               <div><span>Categoria</span><b>{selectedWhatsappThread.category}</b></div>
@@ -942,11 +1000,12 @@ export default function Home() {
               </div>
             </div>
             <div className="whatsapp-ticket-actions">
-              <button onClick={() => notify(`Richiesta pronta per ${selectedWhatsappThread.suggestedOperator}`)}>Assegna</button>
+              <button onClick={() => updateWhatsappThreadStatus(selectedWhatsappThread.id, "Assegnata")}>Assegna</button>
+              <button onClick={() => advanceWhatsappThread(selectedWhatsappThread.id)}>Avanza stato</button>
               <button onClick={() => setChat(true)}>Risposta pronta</button>
               <button onClick={() => goTo("agenda")}>Crea intervento</button>
             </div>
-          </article>
+          </article>}
         </div>
       </section>
 
