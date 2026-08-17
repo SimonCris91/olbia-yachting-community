@@ -27,6 +27,11 @@ type RequestLauncher = {
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Marinaio AI";
 const REQUEST_ASSISTANT_NAME = "Olbia Yachting Request Assistant";
+const requestSteps = [
+  { id: "01", title: "Raccogli la richiesta", note: "Nome, mezzo, zona, urgenza e foto in un solo passaggio." },
+  { id: "02", title: "Ordina il problema", note: "Categoria lavoro, priorita e domande utili prima del preventivo." },
+  { id: "03", title: "Inviala bene", note: "Messaggio pronto da mandare a tecnico, cantiere o cliente." },
+];
 
 const requestDemoCases = [
   { title: "Ringhiera inox da saldare", note: "Barca a motore, intervento su misura in banchina.", category: "Inox e carpenteria" },
@@ -738,11 +743,11 @@ export default function Home() {
 
       <nav className="section-tabs" aria-label="Sezioni dell'app">
         <button className={tab === "home" ? "active" : ""} onClick={() => goTo("home")}>Home</button>
-        <button className={tab === "agenda" ? "active" : ""} onClick={() => goTo("agenda")}>Agenda</button>
-        <button className={tab === "scan" ? "active" : ""} onClick={() => goTo("scan")}>Scansiona</button>
-        <button className={tab === "shop" ? "active" : ""} onClick={() => goTo("shop")}>Vetrina</button>
-        <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>Interventi</button>
-        <button className={tab === "profile" ? "active" : ""} onClick={() => goTo("profile")}>Profilo e piani</button>
+        <button className={tab === "scan" ? "active" : ""} onClick={() => goTo("scan")}>Foto</button>
+        <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>Richieste</button>
+        <button className={tab === "shop" ? "active" : ""} onClick={() => goTo("shop")}>Materiali</button>
+        <button className={tab === "agenda" ? "active" : ""} onClick={() => goTo("agenda")}>Archivio</button>
+        <button className={tab === "profile" ? "active" : ""} onClick={() => goTo("profile")}>Profilo</button>
       </nav>
 
       <picture className="brand-showcase" data-section="home">
@@ -752,42 +757,38 @@ export default function Home() {
 
       <section className="hero" data-section="home">
         <div>
-          <span className="eyebrow">{greeting}</span>
-          <h1>Ordina le richieste nautiche<br />prima che diventino caos.</h1>
-          <p>{REQUEST_ASSISTANT_NAME} e la demo operativa di {BRAND_NAME}: raccoglie dati, capisce l'urgenza, suggerisce materiali e prepara messaggi pronti per tecnici, cantieri e clienti nella zona di {location}.</p>
+          <span className="eyebrow">{REQUEST_ASSISTANT_NAME}</span>
+          <h1>Richieste nautiche<br />piu chiare, subito.</h1>
+          <p>Trasforma messaggi confusi in schede ordinate con priorita, materiali possibili e testo pronto da inviare.</p>
         </div>
-        <div className="weather"><span>6</span><strong>campi chiave</strong><small>nome, mezzo, zona, problema, urgenza e foto</small></div>
+        <div className="weather"><span>3</span><strong>passi</strong><small>raccogli, ordina, invia</small></div>
       </section>
 
       <section className="quick-grid" data-section="home" aria-label="Azioni rapide">
-        <button className="quick primary" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a trasformare questa richiesta nautica in una scheda ordinata per ${location}.` })}><span className="quick-icon">OK</span><b>Apri richiesta guidata</b><small>Dal problema al messaggio pronto</small><i>-&gt;</i></button>
+        <button className="quick primary" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a trasformare questa richiesta nautica in una scheda ordinata per ${location}.` })}><span className="quick-icon">1</span><b>Apri la demo</b><small>Compila una richiesta guidata</small><i>-&gt;</i></button>
         <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={(event) => identifyPhoto(event.target.files?.[0])} />
-        <button className="quick" onClick={() => fileRef.current?.click()}><span className="quick-icon">O</span><b>Scatta una foto</b><small>Identifica il componente o il guasto</small><i>-&gt;</i></button>
-        <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Inviala al tecnico giusto</b><small>Servizi reali a {location}</small><i>-&gt;</i></button>
+        <button className="quick" onClick={() => fileRef.current?.click()}><span className="quick-icon">2</span><b>Carica una foto</b><small>Aiuta a capire guasto o componente</small><i>-&gt;</i></button>
+        <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">3</span><b>Trova chi la gestisce</b><small>Tecnici e aziende reali a {location}</small><i>-&gt;</i></button>
       </section>
 
       <section className="request-focus" data-section="home">
         <div className="request-focus-copy">
-          <span className="eyebrow">REQUEST ASSISTANT</span>
-          <h2>Una mini demo vendibile subito.</h2>
-          <p>Il valore e semplice da capire: richieste disordinate entrano da WhatsApp o telefono, l'assistente le riorganizza in schede leggibili con categoria lavoro, priorita, domande mancanti, materiali possibili e messaggio pronto da inviare.</p>
-          <div className="request-focus-points">
-            <span>Nome e telefono</span>
-            <span>Barca, gommone o yacht</span>
-            <span>Porto o zona</span>
-            <span>Problema e urgenza</span>
-            <span>Foto e categoria lavoro</span>
-            <span>Messaggio pronto per WhatsApp o email</span>
+          <span className="eyebrow">COME FUNZIONA</span>
+          <h2>Una demo semplice da capire.</h2>
+          <p>Serve a una cosa sola: ricevere richieste nautiche in modo piu ordinato, cosi chi lavora perde meno tempo su WhatsApp e al telefono.</p>
+          <div className="request-step-list">
+            {requestSteps.map((step) => <article key={step.id}><span>{step.id}</span><div><b>{step.title}</b><small>{step.note}</small></div></article>)}
           </div>
         </div>
         <div className="request-demo-board">
           <div className="request-demo-head">
-            <b>5 casi demo da mostrare questa settimana</b>
-            <small>Perfetti per elettricisti nautici, inox, ricambi, pulizia e manutenzione.</small>
+            <b>Esempi chiari da provare</b>
+            <small>Mostrano subito il valore della demo.</small>
           </div>
           <div className="request-demo-list">
-            {requestDemoCases.map((item, index) => <article key={item.title}><span>{`0${index + 1}`}</span><div><b>{item.title}</b><small>{item.note}</small></div><em>{item.category}</em></article>)}
+            {requestDemoCases.slice(0, 3).map((item, index) => <article key={item.title}><span>{`0${index + 1}`}</span><div><b>{item.title}</b><small>{item.note}</small></div><em>{item.category}</em></article>)}
           </div>
+          <button className="request-demo-cta" onClick={() => setChat(true)}>Prova un caso nella chat</button>
         </div>
       </section>
 
@@ -795,7 +796,7 @@ export default function Home() {
         <div className="shop-hero">
           <span className="eyebrow light">MATERIALI E RICAMBI</span>
           <h1>Dal problema ai materiali possibili.</h1>
-          <p>Dopo aver ordinato la richiesta, usa questa area per capire quali categorie di ricambi, accessori o forniture servono prima di aprire un catalogo esterno.</p>
+          <p>Qui controlli che cosa potrebbe servire prima di chiedere un preventivo o cercare un ricambio.</p>
           <label className="shop-search"><span>Cerca nella vetrina</span><input value={shopQuery} onChange={(event) => setShopQuery(event.target.value)} placeholder="Es. pompa, parabordo, ricambio motore" /></label>
         </div>
         <div className="shop-disclosure"><b>Assistente tecnico e operativo, non checkout interno</b><span>{BRAND_NAME} non vende questi articoli e non gestisce il pagamento. Questa sezione serve a dare una base utile a preventivi, richieste materiali e urgenze tecniche.</span></div>
@@ -859,7 +860,7 @@ export default function Home() {
         <div className="community-copy">
           <span className="eyebrow light">RETE INTERVENTI - {location.toUpperCase()}</span>
           <h2>{location} Request Network</h2>
-          <p>{accountType === "private" ? "Accesso privato: puoi raccogliere la tua richiesta e vedere solo le tue schede." : accountType === "operator" ? "Accesso operatore: ricevi richieste aperte gia piu ordinate e compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e richieste della zona in un unico flusso." : "Accesso titolare: tutte le sezioni restano disponibili separatamente, con focus operativo sulle richieste."}</p>
+          <p>{accountType === "private" ? "Vedi e salvi solo le tue richieste." : accountType === "operator" ? "Ricevi richieste piu ordinate e compatibili con il tuo lavoro." : accountType === "company" ? "Gestisci richieste, materiali e contatti della zona." : "Hai accesso completo, ma il focus qui resta sulle richieste."}</p>
           <div className="community-access">
             <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
             <button className={accountType === "operator" ? "active" : ""} onClick={() => void changeAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
@@ -941,11 +942,11 @@ export default function Home() {
       </footer>
 
       <nav className="bottom-nav" aria-label="Navigazione principale">
-        {([["home", "H", "Home"], ["agenda", "OK", "Agenda"], ["scan", "O", "Scansiona"], ["shop", "V", "Vetrina"], ["community", "P", "Zona"], ["profile", "SC", "Profilo"]] as [Tab, string, string][]).map(([id, icon, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => goTo(id)}><i>{icon}</i><span>{label}</span></button>)}
+        {([["home", "H", "Home"], ["scan", "O", "Foto"], ["community", "P", "Richieste"], ["shop", "V", "Materiali"], ["agenda", "OK", "Archivio"], ["profile", "SC", "Profilo"]] as [Tab, string, string][]).map(([id, icon, label]) => <button key={id} className={tab === id ? "active" : ""} onClick={() => goTo(id)}><i>{icon}</i><span>{label}</span></button>)}
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label={`Apri l'assistente ${BRAND_NAME}`}><span className="assistant-symbol" aria-hidden="true"><i /><i /><i /></span></button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <div className="message-actions"><button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button><button className="message-action shop-action" onClick={() => { setChat(false); goTo("shop"); }}>Apri materiali</button></div>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Mi serve saldare una ringhiera inox su una barca a Olbia. Preparami la scheda richiesta.")}>Caso inox</button><button disabled={chatLoading} onClick={() => sendChat("Ho un problema elettrico al salpa ancora a Olbia. Quali dati devo raccogliere prima di chiamare un tecnico?")}>Caso elettrico</button><button disabled={chatLoading} onClick={() => sendChat("Cerco un ricambio nautico urgente. Aiutami a capire cosa chiedere prima del preventivo.")}>Caso ricambio</button><button disabled={chatLoading} onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema, urgenza e categoria.` })}>Avvia una richiesta</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <div className="message-actions"><button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button><button className="message-action shop-action" onClick={() => { setChat(false); goTo("shop"); }}>Apri materiali</button></div>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema, urgenza e categoria.` })}>Inizia richiesta</button><button disabled={chatLoading} onClick={() => sendChat("Ho un problema elettrico al salpa ancora a Olbia. Quali dati devo raccogliere prima di chiamare un tecnico?")}>Caso elettrico</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {requestLauncher && <div className="modal-backdrop" onClick={() => setRequestLauncher(null)}><section className="request-launcher-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setRequestLauncher(null)}>x</button><span className="eyebrow">COME VUOI AVVIARE LA RICHIESTA</span><h2>{requestLauncher.targetName}</h2><p>{requestLauncher.details}</p><div className="request-launcher-actions"><button onClick={() => launchRequestChat(requestLauncher)}>Chat con Marinaio AI</button><button onClick={() => launchRequestForm(requestLauncher)}>Compila la richiesta</button>{requestLauncher.email && <button className="contact-email" onClick={() => launchRequestEmail(requestLauncher)}>Apri Email</button>}{requestLauncher.whatsapp && <button className="contact-whatsapp" onClick={() => launchRequestWhatsapp(requestLauncher)}>Apri WhatsApp</button>}</div><small className="plan-note">Il testo viene preparato in automatico, ma sei tu a confermare l'invio o il salvataggio.</small></section></div>}
