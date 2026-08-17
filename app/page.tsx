@@ -61,6 +61,54 @@ const whatsappActionSteps = [
   "Crea intervento e salva in archivio",
 ];
 
+const whatsappInboxItems = [
+  {
+    id: "thread-salpa-ancora",
+    client: "Marco R.",
+    channel: "WhatsApp Business",
+    preview: "Salpa ancora bloccato, Bavaria 46, Olbia, mi serve oggi.",
+    time: "09:14",
+    priority: "Alta",
+    status: "Nuova",
+    category: "Elettrica / coperta",
+    boat: "Bavaria 46",
+    location: "Olbia - Molo Brin",
+    issue: "Salpa ancora bloccato in banchina",
+    missing: ["Foto del verricello", "Numero banchina", "Segni di alimentazione"],
+    suggestedOperator: "Costa Smeralda Electric",
+  },
+  {
+    id: "thread-pulizia-teak",
+    client: "Captain Elena",
+    channel: "WhatsApp Business",
+    preview: "Serve pulizia teak e lavaggio ponte entro domani a Porto Cervo.",
+    time: "10:02",
+    priority: "Media",
+    status: "Da assegnare",
+    category: "Pulizia e detailing",
+    boat: "Yacht 21 m",
+    location: "Porto Cervo",
+    issue: "Preparazione barca prima arrivo ospiti",
+    missing: ["Orario preferito", "Foto teak", "Accesso acqua in banchina"],
+    suggestedOperator: "Blue Detail Porto Cervo",
+  },
+  {
+    id: "thread-ricambio-pompa",
+    client: "Gianni P.",
+    channel: "WhatsApp Business",
+    preview: "Mi serve un ricambio per pompa di sentina, ho foto e codice parziale.",
+    time: "11:27",
+    priority: "Media",
+    status: "In analisi",
+    category: "Ricambi nautici",
+    boat: "Saver 690",
+    location: "Olbia",
+    issue: "Ricerca ricambio compatibile con urgenza moderata",
+    missing: ["Tensione 12/24 V", "Diametro raccordi", "Foto etichetta"],
+    suggestedOperator: "Sardinia Nautic Parts",
+  },
+];
+
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
   { id: "pumps", symbol: "≈", tone: "water", name: "Pompe e impianti acqua", note: "Pompe di sentina, autoclavi, giranti, raccordi e accessori idraulici", source: "Osculati", providers: ["Osculati", "TREM", "SVB"], badge: "Impianti" },
@@ -250,6 +298,7 @@ export default function Home() {
   const [telegramHandle, setTelegramHandle] = useState("");
   const [language, setLanguage] = useState<Language>("it");
   const [showDemoData, setShowDemoData] = useState(false);
+  const [selectedWhatsappThreadId, setSelectedWhatsappThreadId] = useState(whatsappInboxItems[0].id);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
   const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
@@ -354,6 +403,7 @@ export default function Home() {
     const query = directoryQuery.trim().toLowerCase();
     return publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && (!operatorCategory || directoryMatchesCategory(provider, operatorCategory)) && (!query || `${provider.name} ${provider.category} ${provider.services.join(" ")} ${provider.note}`.toLowerCase().includes(query)));
   }, [directoryQuery, location, operatorCategory]);
+  const selectedWhatsappThread = useMemo(() => whatsappInboxItems.find((item) => item.id === selectedWhatsappThreadId) ?? whatsappInboxItems[0], [selectedWhatsappThreadId]);
   const operatorCount = (category: string) => {
     const registered = showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
     const directory = publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && directoryMatchesCategory(provider, category)).length;
@@ -841,6 +891,62 @@ export default function Home() {
             {whatsappActionSteps.map((step) => <span key={step}>{step}</span>)}
           </div>
           <button className="request-demo-cta" onClick={() => setChat(true)}>Prova un caso nella chat</button>
+        </div>
+      </section>
+
+      <section className="whatsapp-inbox-section" data-section="home">
+        <div className="whatsapp-inbox-copy">
+          <span className="eyebrow">INBOX AZIENDALE</span>
+          <h2>Così lavora l’azienda dopo il messaggio.</h2>
+          <p>Le richieste entrano da WhatsApp Business, vengono lette subito e diventano ticket ordinati con priorità, zona, barca e prossimo passo.</p>
+        </div>
+        <div className="whatsapp-inbox-board">
+          <aside className="whatsapp-inbox-list" aria-label="Conversazioni ricevute">
+            {whatsappInboxItems.map((item) => <button key={item.id} className={`whatsapp-inbox-item ${selectedWhatsappThread.id === item.id ? "active" : ""}`} onClick={() => setSelectedWhatsappThreadId(item.id)}>
+              <div className="whatsapp-inbox-item-head">
+                <b>{item.client}</b>
+                <small>{item.time}</small>
+              </div>
+              <p>{item.preview}</p>
+              <div className="whatsapp-inbox-item-meta">
+                <span>{item.priority}</span>
+                <span>{item.status}</span>
+              </div>
+            </button>)}
+          </aside>
+          <article className="whatsapp-ticket-card" aria-label="Dettaglio richiesta selezionata">
+            <div className="whatsapp-ticket-head">
+              <div>
+                <span>{selectedWhatsappThread.channel}</span>
+                <h3>{selectedWhatsappThread.client}</h3>
+              </div>
+              <div className="whatsapp-ticket-badges">
+                <small>{selectedWhatsappThread.priority}</small>
+                <small>{selectedWhatsappThread.status}</small>
+              </div>
+            </div>
+            <div className="whatsapp-ticket-grid">
+              <div><span>Categoria</span><b>{selectedWhatsappThread.category}</b></div>
+              <div><span>Barca</span><b>{selectedWhatsappThread.boat}</b></div>
+              <div><span>Zona</span><b>{selectedWhatsappThread.location}</b></div>
+              <div><span>Operatore suggerito</span><b>{selectedWhatsappThread.suggestedOperator}</b></div>
+            </div>
+            <div className="whatsapp-ticket-problem">
+              <span>Problema sintetizzato</span>
+              <p>{selectedWhatsappThread.issue}</p>
+            </div>
+            <div className="whatsapp-ticket-missing">
+              <span>Dati mancanti da chiedere</span>
+              <div>
+                {selectedWhatsappThread.missing.map((item) => <small key={item}>{item}</small>)}
+              </div>
+            </div>
+            <div className="whatsapp-ticket-actions">
+              <button onClick={() => notify(`Richiesta pronta per ${selectedWhatsappThread.suggestedOperator}`)}>Assegna</button>
+              <button onClick={() => setChat(true)}>Risposta pronta</button>
+              <button onClick={() => goTo("agenda")}>Crea intervento</button>
+            </div>
+          </article>
         </div>
       </section>
 

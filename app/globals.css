@@ -103,6 +103,40 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .request-demo-actions span { display: inline-flex; align-items: center; min-height: 34px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font-size: 10px; font-weight: 800; }
 .request-demo-cta { width: 100%; margin-top: 16px; padding: 13px 16px; border: 0; border-radius: 14px; background: linear-gradient(135deg, #e0bf69, #bd9130); color: #251b05; font-size: 12px; font-weight: 900; }
 
+.whatsapp-inbox-section { max-width: 1132px; margin: 0 auto 60px; padding: 0 24px; }
+.whatsapp-inbox-copy { max-width: 680px; margin-bottom: 18px; }
+.whatsapp-inbox-copy h2 { margin: 10px 0 14px; color: var(--navy); font: 500 34px/1.05 Georgia, serif; }
+.whatsapp-inbox-copy p { margin: 0; color: var(--muted); line-height: 1.68; }
+.whatsapp-inbox-board { display: grid; grid-template-columns: minmax(280px, .78fr) minmax(0, 1.22fr); gap: 18px; }
+.whatsapp-inbox-list, .whatsapp-ticket-card { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 12px 34px rgba(3,19,39,.06); }
+.whatsapp-inbox-list { display: grid; gap: 10px; }
+.whatsapp-inbox-item { width: 100%; padding: 14px; border: 1px solid #e5efef; border-radius: 16px; background: #f8fbfb; color: var(--ink); text-align: left; }
+.whatsapp-inbox-item.active { border-color: rgba(24,183,212,.5); background: #eefbfe; box-shadow: inset 0 0 0 1px rgba(24,183,212,.14); }
+.whatsapp-inbox-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.whatsapp-inbox-item-head b { font-size: 13px; color: var(--navy); }
+.whatsapp-inbox-item-head small { color: var(--muted); font-size: 10px; }
+.whatsapp-inbox-item p { margin: 8px 0 10px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.whatsapp-inbox-item-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.whatsapp-inbox-item-meta span { display: inline-flex; min-height: 28px; align-items: center; padding: 6px 10px; border-radius: 999px; background: #fff; color: #0b6c84; font-size: 10px; font-weight: 800; }
+.whatsapp-ticket-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.whatsapp-ticket-head span { display: inline-block; color: #0b7892; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.whatsapp-ticket-head h3 { margin: 7px 0 0; color: var(--navy); font: 500 29px/1.05 Georgia, serif; }
+.whatsapp-ticket-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.whatsapp-ticket-badges small { display: inline-flex; min-height: 30px; align-items: center; padding: 7px 11px; border-radius: 999px; background: #0a2740; color: #fff; font-size: 10px; font-weight: 800; }
+.whatsapp-ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.whatsapp-ticket-grid div, .whatsapp-ticket-problem, .whatsapp-ticket-missing { padding: 14px; border: 1px solid #e5efef; border-radius: 16px; background: #f8fbfb; }
+.whatsapp-ticket-grid span, .whatsapp-ticket-problem span, .whatsapp-ticket-missing span { display: block; color: #6a808a; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.whatsapp-ticket-grid b { display: block; margin-top: 7px; color: var(--navy); font-size: 13px; line-height: 1.45; }
+.whatsapp-ticket-problem { margin-top: 10px; }
+.whatsapp-ticket-problem p { margin: 8px 0 0; color: var(--ink); font-size: 14px; line-height: 1.6; }
+.whatsapp-ticket-missing { margin-top: 10px; }
+.whatsapp-ticket-missing div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.whatsapp-ticket-missing small { display: inline-flex; align-items: center; min-height: 30px; padding: 7px 10px; border-radius: 999px; background: #fff; color: #8a630a; border: 1px solid #f0dfb4; font-size: 10px; font-weight: 800; }
+.whatsapp-ticket-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.whatsapp-ticket-actions button { min-height: 44px; padding: 10px 14px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 850; }
+.whatsapp-ticket-actions button:nth-child(2) { background: #0b7892; }
+.whatsapp-ticket-actions button:nth-child(3) { background: #edf6f7; color: var(--navy); border: 1px solid #dbe9eb; }
+
 .dashboard-grid { max-width: 1132px; margin: 0 auto; padding: 0 24px 58px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; }
 .panel { min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 12px 34px rgba(3,19,39,.06); }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -238,6 +272,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .quick i { display: none; }
   .request-focus { grid-template-columns: 1fr; padding: 0 16px; }
   .request-visual-grid { grid-template-columns: 1fr; }
+  .whatsapp-inbox-section { padding: 0 16px; }
+  .whatsapp-inbox-board { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; padding: 0 16px 42px; }
   .panel { padding: 20px; }
   .panel-head h2 { font-size: 27px; }
@@ -270,6 +306,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .account-switch::after { content: "Account"; font-size: 9px; }
   .access-areas > div { grid-template-columns: 1fr; }
   .quick { padding: 14px; }
+  .whatsapp-ticket-head, .whatsapp-ticket-grid { grid-template-columns: 1fr; }
+  .whatsapp-ticket-head { flex-direction: column; }
+  .whatsapp-ticket-badges { justify-content: flex-start; }
+  .whatsapp-ticket-grid { display: grid; grid-template-columns: 1fr; }
   .structured-field { flex-direction: column; }
   .structured-field b { text-align: left; }
   .request-demo-list article { grid-template-columns: 40px 1fr; }
