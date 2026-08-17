@@ -6,7 +6,7 @@ export function LegalShell({ eyebrow, title, updated, children }: { eyebrow: str
       <header className="legal-header">
         <a className="legal-brand" href="/" aria-label="Torna a Olbia Yachting Community">
           <img src="/yachting-community-logo.png" alt="" />
-          <span><b>Olbia Yachting Community</b><small>Marinaio AI</small></span>
+          <span><b>Olbia Yachting Community</b><small>Yachting Community Assistant</small></span>
         </a>
         <a className="legal-back" href="/">Torna all’app</a>
       </header>
