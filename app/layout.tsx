@@ -18,20 +18,20 @@ const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://metayachting-ai.simonecris91.chatgpt.site"),
-  title: "Olbia Yachting Community - Marinaio AI",
-  description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione con la community di Olbia.",
+  title: "Olbia Yachting Community - Request Assistant",
+  description: "Trasforma richieste nautiche confuse in schede ordinate, priorita chiare e messaggi pronti per tecnici, cantieri e clienti.",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/yachting-community-logo.png", apple: "/yachting-community-logo.png" },
   themeColor: "#09283b",
   openGraph: {
-    title: "Olbia Yachting Community",
-    description: "Connect. Share. Sail. La community nautica di Olbia con Marinaio AI.",
+    title: "Olbia Yachting Community - Request Assistant",
+    description: "Richieste nautiche ordinate, priorita chiare e messaggi pronti per il territorio di Olbia.",
     images: [{ url: "/og.png", width: 2032, height: 774, alt: "Olbia Yachting Community" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Olbia Yachting Community",
-    description: "Connect. Share. Sail. La community nautica di Olbia con Marinaio AI.",
+    title: "Olbia Yachting Community - Request Assistant",
+    description: "Richieste nautiche ordinate, priorita chiare e messaggi pronti per il territorio di Olbia.",
     images: ["/og.png"],
   },
 };

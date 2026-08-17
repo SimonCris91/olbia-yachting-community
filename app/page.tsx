@@ -26,6 +26,15 @@ type RequestLauncher = {
 
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Marinaio AI";
+const REQUEST_ASSISTANT_NAME = "Olbia Yachting Request Assistant";
+
+const requestDemoCases = [
+  { title: "Ringhiera inox da saldare", note: "Barca a motore, intervento su misura in banchina.", category: "Inox e carpenteria" },
+  { title: "Ricambio nautico urgente", note: "Codice da identificare e alternativa disponibile da trovare.", category: "Ricambi" },
+  { title: "Pulizia barca per domani", note: "Richiesta rapida con foto, orario e porto.", category: "Pulizia e detailing" },
+  { title: "Guasto elettrico al salpa ancora", note: "Urgenza, diagnosi iniziale e tecnico da coinvolgere.", category: "Elettrica nautica" },
+  { title: "Controllo prima dell'uscita", note: "Manutenzione veloce con check prioritari.", category: "Manutenzione" },
+];
 
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
@@ -208,7 +217,7 @@ export default function Home() {
   const [chatText, setChatText] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatStatus, setChatStatus] = useState("");
-  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao, sono Marinaio AI. Posso aiutarti con un ricambio, un guasto, una mansione o un professionista nautico nella tua zona." }]);
+  const [messages, setMessages] = useState<Message[]>([{ id: 1, role: "assistant", text: "Ciao, sono Marinaio AI. Ordino richieste nautiche, preparo le domande giuste e trasformo WhatsApp confusi in schede chiare per tecnici, cantieri e clienti." }]);
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -744,27 +753,52 @@ export default function Home() {
       <section className="hero" data-section="home">
         <div>
           <span className="eyebrow">{greeting}</span>
-          <h1>Cosa serve oggi<br />alla tua barca?</h1>
-          <p>Identifica, trova e organizza. {BRAND_NAME} ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
+          <h1>Ordina le richieste nautiche<br />prima che diventino caos.</h1>
+          <p>{REQUEST_ASSISTANT_NAME} e la demo operativa di {BRAND_NAME}: raccoglie dati, capisce l'urgenza, suggerisce materiali e prepara messaggi pronti per tecnici, cantieri e clienti nella zona di {location}.</p>
         </div>
-        <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
+        <div className="weather"><span>6</span><strong>campi chiave</strong><small>nome, mezzo, zona, problema, urgenza e foto</small></div>
       </section>
 
       <section className="quick-grid" data-section="home" aria-label="Azioni rapide">
-        <button className="quick primary" onClick={() => fileRef.current?.click()}><span className="quick-icon">O</span><b>Scatta una foto</b><small>Identifica un componente</small><i>-&gt;</i></button>
+        <button className="quick primary" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a trasformare questa richiesta nautica in una scheda ordinata per ${location}.` })}><span className="quick-icon">OK</span><b>Apri richiesta guidata</b><small>Dal problema al messaggio pronto</small><i>-&gt;</i></button>
         <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={(event) => identifyPhoto(event.target.files?.[0])} />
-        <button className="quick" onClick={() => goTo("shop")}><span className="quick-icon">Q</span><b>Vetrina nautica</b><small>Ricambi e accessori esterni</small><i>-&gt;</i></button>
-        <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Trova un professionista</b><small>Servizi a {location}</small><i>-&gt;</i></button>
+        <button className="quick" onClick={() => fileRef.current?.click()}><span className="quick-icon">O</span><b>Scatta una foto</b><small>Identifica il componente o il guasto</small><i>-&gt;</i></button>
+        <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Inviala al tecnico giusto</b><small>Servizi reali a {location}</small><i>-&gt;</i></button>
+      </section>
+
+      <section className="request-focus" data-section="home">
+        <div className="request-focus-copy">
+          <span className="eyebrow">REQUEST ASSISTANT</span>
+          <h2>Una mini demo vendibile subito.</h2>
+          <p>Il valore e semplice da capire: richieste disordinate entrano da WhatsApp o telefono, l'assistente le riorganizza in schede leggibili con categoria lavoro, priorita, domande mancanti, materiali possibili e messaggio pronto da inviare.</p>
+          <div className="request-focus-points">
+            <span>Nome e telefono</span>
+            <span>Barca, gommone o yacht</span>
+            <span>Porto o zona</span>
+            <span>Problema e urgenza</span>
+            <span>Foto e categoria lavoro</span>
+            <span>Messaggio pronto per WhatsApp o email</span>
+          </div>
+        </div>
+        <div className="request-demo-board">
+          <div className="request-demo-head">
+            <b>5 casi demo da mostrare questa settimana</b>
+            <small>Perfetti per elettricisti nautici, inox, ricambi, pulizia e manutenzione.</small>
+          </div>
+          <div className="request-demo-list">
+            {requestDemoCases.map((item, index) => <article key={item.title}><span>{`0${index + 1}`}</span><div><b>{item.title}</b><small>{item.note}</small></div><em>{item.category}</em></article>)}
+          </div>
+        </div>
       </section>
 
       <section className="shop-page" data-section="shop">
         <div className="shop-hero">
-          <span className="eyebrow light">VETRINA NAUTICA</span>
-          <h1>Trova ciò che serve a bordo.</h1>
-          <p>Descrivi ciò che serve alla barca, confronta le categorie e usa l'assistente per verificare compatibilità e dati tecnici prima di aprire un catalogo esterno.</p>
+          <span className="eyebrow light">MATERIALI E RICAMBI</span>
+          <h1>Dal problema ai materiali possibili.</h1>
+          <p>Dopo aver ordinato la richiesta, usa questa area per capire quali categorie di ricambi, accessori o forniture servono prima di aprire un catalogo esterno.</p>
           <label className="shop-search"><span>Cerca nella vetrina</span><input value={shopQuery} onChange={(event) => setShopQuery(event.target.value)} placeholder="Es. pompa, parabordo, ricambio motore" /></label>
         </div>
-          <div className="shop-disclosure"><b>Assistente all'acquisto, non checkout interno</b><span>Olbia Yachting Community non vende questi articoli, non incassa il pagamento e al momento non riceve commissioni. Prezzi, disponibilità, spedizione e resi dipendono dal venditore.</span></div>
+        <div className="shop-disclosure"><b>Assistente tecnico e operativo, non checkout interno</b><span>{BRAND_NAME} non vende questi articoli e non gestisce il pagamento. Questa sezione serve a dare una base utile a preventivi, richieste materiali e urgenze tecniche.</span></div>
         <section className="supplier-strip" aria-labelledby="supplier-title">
           <div className="supplier-heading"><span>CATALOGHI CONSULTATI</span><h2 id="supplier-title">Più fornitori, una sola ricerca.</h2><p>I nomi appartengono ai rispettivi titolari. La presenza qui indica soltanto un collegamento al catalogo ufficiale, non una partnership.</p></div>
           <div className="supplier-list">{shopSuppliers.map((supplier) => <a key={supplier.id} href={`/api/out?id=${encodeURIComponent(supplier.id)}`} target="_blank" rel="noreferrer nofollow sponsored"><b>{supplier.name}</b><small>{supplier.note}</small><i aria-hidden="true">↗</i></a>)}</div>
@@ -824,8 +858,8 @@ export default function Home() {
       <section className="community" data-section="community" id="community">
         <div className="community-copy">
           <span className="eyebrow light">RETE INTERVENTI - {location.toUpperCase()}</span>
-          <h2>{location} {BRAND_NAME}</h2>
-          <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
+          <h2>{location} Request Network</h2>
+          <p>{accountType === "private" ? "Accesso privato: puoi raccogliere la tua richiesta e vedere solo le tue schede." : accountType === "operator" ? "Accesso operatore: ricevi richieste aperte gia piu ordinate e compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e richieste della zona in un unico flusso." : "Accesso titolare: tutte le sezioni restano disponibili separatamente, con focus operativo sulle richieste."}</p>
           <div className="community-access">
             <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
             <button className={accountType === "operator" ? "active" : ""} onClick={() => void changeAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
@@ -842,7 +876,7 @@ export default function Home() {
             </button>
           </div>
           {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
-          <button className="publish-job" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca e l'urgenza.`, targetName: "Marinaio AI", chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema e urgenza.` })}>+ Pubblica una richiesta</button>
+          <button className="publish-job" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema, urgenza e categoria.` })}>+ Avvia una richiesta ordinata</button>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
@@ -911,7 +945,7 @@ export default function Home() {
       </nav>
 
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label={`Apri l'assistente ${BRAND_NAME}`}><span className="assistant-symbol" aria-hidden="true"><i /><i /><i /></span></button>
-      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <div className="message-actions"><button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button><button className="message-action shop-action" onClick={() => { setChat(false); goTo("shop"); }}>Apri vetrina</button></div>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => { setChat(false); goTo("shop"); }}>Vetrina prodotti</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca e l'urgenza.`, targetName: "Marinaio AI", chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema e urgenza.` })}>Avvia una richiesta</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
+      {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <div className="message-actions"><button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button><button className="message-action shop-action" onClick={() => { setChat(false); goTo("shop"); }}>Apri materiali</button></div>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Mi serve saldare una ringhiera inox su una barca a Olbia. Preparami la scheda richiesta.")}>Caso inox</button><button disabled={chatLoading} onClick={() => sendChat("Ho un problema elettrico al salpa ancora a Olbia. Quali dati devo raccogliere prima di chiamare un tecnico?")}>Caso elettrico</button><button disabled={chatLoading} onClick={() => sendChat("Cerco un ricambio nautico urgente. Aiutami a capire cosa chiedere prima del preventivo.")}>Caso ricambio</button><button disabled={chatLoading} onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema, urgenza e categoria.` })}>Avvia una richiesta</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
 
       {requestLauncher && <div className="modal-backdrop" onClick={() => setRequestLauncher(null)}><section className="request-launcher-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setRequestLauncher(null)}>x</button><span className="eyebrow">COME VUOI AVVIARE LA RICHIESTA</span><h2>{requestLauncher.targetName}</h2><p>{requestLauncher.details}</p><div className="request-launcher-actions"><button onClick={() => launchRequestChat(requestLauncher)}>Chat con Marinaio AI</button><button onClick={() => launchRequestForm(requestLauncher)}>Compila la richiesta</button>{requestLauncher.email && <button className="contact-email" onClick={() => launchRequestEmail(requestLauncher)}>Apri Email</button>}{requestLauncher.whatsapp && <button className="contact-whatsapp" onClick={() => launchRequestWhatsapp(requestLauncher)}>Apri WhatsApp</button>}</div><small className="plan-note">Il testo viene preparato in automatico, ma sei tu a confermare l'invio o il salvataggio.</small></section></div>}
