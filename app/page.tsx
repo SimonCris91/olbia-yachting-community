@@ -41,6 +41,26 @@ const requestDemoCases = [
   { title: "Controllo prima dell'uscita", note: "Manutenzione veloce con check prioritari.", category: "Manutenzione" },
 ];
 
+const whatsappDemoMessages = [
+  { id: "m1", sender: "Cliente", time: "09:14", tone: "customer" as const, text: "Ciao, ho il salpa ancora bloccato sul Bavaria 46. Sono a Olbia, zona Molo Brin. Mi servirebbe qualcuno oggi se possibile." },
+  { id: "m2", sender: ASSISTANT_NAME, time: "09:15", tone: "assistant" as const, text: "Ricevuto. La richiesta viene ordinata con priorita, categoria tecnica e dati mancanti prima dell'invio." },
+];
+
+const whatsappStructuredFields = [
+  { label: "Categoria", value: "Elettrica / coperta" },
+  { label: "Priorita", value: "Alta" },
+  { label: "Zona", value: "Olbia - Molo Brin" },
+  { label: "Imbarcazione", value: "Bavaria 46" },
+  { label: "Problema", value: "Salpa ancora bloccato" },
+  { label: "Dati da chiedere", value: "Foto, banchina, segni di alimentazione" },
+];
+
+const whatsappActionSteps = [
+  "Assegna a tecnico elettrico nautico",
+  "Invia risposta pronta al cliente",
+  "Crea intervento e salva in archivio",
+];
+
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
   { id: "pumps", symbol: "≈", tone: "water", name: "Pompe e impianti acqua", note: "Pompe di sentina, autoclavi, giranti, raccordi e accessori idraulici", source: "Osculati", providers: ["Osculati", "TREM", "SVB"], badge: "Impianti" },
@@ -782,11 +802,43 @@ export default function Home() {
         </div>
         <div className="request-demo-board">
           <div className="request-demo-head">
-            <b>Esempi chiari da provare</b>
-            <small>Mostrano subito il valore della demo.</small>
+            <b>Da WhatsApp a scheda lavoro</b>
+            <small>Questa e la trasformazione che l'azienda deve vedere subito.</small>
           </div>
-          <div className="request-demo-list">
+          <div className="request-visual-grid">
+            <article className="whatsapp-thread-card" aria-label="Messaggio WhatsApp in ingresso">
+              <div className="demo-card-head">
+                <b>Messaggio in ingresso</b>
+                <small>Il cliente continua a scrivere su WhatsApp come ha sempre fatto.</small>
+              </div>
+              <div className="whatsapp-thread">
+                {whatsappDemoMessages.map((message) => <div key={message.id} className={`whatsapp-row ${message.tone}`}>
+                  <div className="whatsapp-meta">
+                    <strong>{message.sender}</strong>
+                    <small>{message.time}</small>
+                  </div>
+                  <p>{message.text}</p>
+                </div>)}
+              </div>
+            </article>
+            <article className="structured-request-card" aria-label="Richiesta ordinata nell'app">
+              <div className="demo-card-head">
+                <b>Richiesta ordinata</b>
+                <small>Nell'app compare subito una scheda chiara e lavorabile.</small>
+              </div>
+              <div className="structured-request-fields">
+                {whatsappStructuredFields.map((field) => <div key={field.label} className="structured-field">
+                  <span>{field.label}</span>
+                  <b>{field.value}</b>
+                </div>)}
+              </div>
+            </article>
+          </div>
+          <div className="request-demo-list compact">
             {requestDemoCases.slice(0, 3).map((item, index) => <article key={item.title}><span>{`0${index + 1}`}</span><div><b>{item.title}</b><small>{item.note}</small></div><em>{item.category}</em></article>)}
+          </div>
+          <div className="request-demo-actions" aria-label="Azioni rapide disponibili">
+            {whatsappActionSteps.map((step) => <span key={step}>{step}</span>)}
           </div>
           <button className="request-demo-cta" onClick={() => setChat(true)}>Prova un caso nella chat</button>
         </div>
