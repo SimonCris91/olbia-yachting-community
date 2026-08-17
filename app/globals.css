@@ -164,6 +164,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .whatsapp-ticket-actions button:nth-child(5) { background: #edf6f7; color: var(--navy); border: 1px solid #dbe9eb; }
 
 .dashboard-grid { max-width: 1132px; margin: 0 auto; padding: 0 24px 58px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; }
+.request-archive-section { max-width: 1132px; margin: 0 auto 56px; padding: 0 24px; }
+.request-archive-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.request-archive-head h2 { margin: 10px 0 12px; color: var(--navy); font: 500 33px/1.05 Georgia, serif; }
+.request-archive-head p { margin: 0; color: var(--muted); line-height: 1.6; max-width: 680px; }
+.request-archive-summary { min-width: 130px; padding: 16px; border: 1px solid #dbe9eb; border-radius: 18px; background: #fff; text-align: center; box-shadow: 0 10px 24px rgba(3,19,39,.05); }
+.request-archive-summary b { display: block; color: var(--navy); font-size: 28px; }
+.request-archive-summary small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.request-archive-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.archive-empty { grid-column: 1 / -1; padding: 22px; border: 1px dashed #cfe1e4; border-radius: 18px; background: #f8fbfb; color: var(--muted); }
+.archive-empty b { display: block; color: var(--navy); font-size: 14px; }
+.archive-empty span { display: block; margin-top: 6px; font-size: 12px; line-height: 1.55; }
+.archive-card { padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 10px 26px rgba(3,19,39,.05); display: flex; flex-direction: column; gap: 12px; }
+.archive-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.archive-card-top span { display: inline-flex; min-height: 28px; align-items: center; padding: 6px 10px; border-radius: 999px; background: #eefbfe; color: #087087; font-size: 10px; font-weight: 900; }
+.archive-card-top small { color: var(--muted); font-size: 10px; }
+.archive-card h3 { margin: 0; color: var(--navy); font: 500 24px/1.05 Georgia, serif; }
+.archive-card p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.55; }
+.archive-card-meta, .archive-card-details { display: flex; flex-wrap: wrap; gap: 8px; }
+.archive-card-meta strong, .archive-card-details span { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 999px; background: #f6f9f9; color: var(--navy); font-size: 10px; font-weight: 800; }
+.archive-card-history { padding: 12px; border-radius: 14px; background: #f8fbfb; border: 1px solid #e5efef; }
+.archive-card-history b { display: block; color: #0b7892; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.archive-card-history small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.archive-card button { margin-top: auto; min-height: 42px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 850; }
 .panel { min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 12px 34px rgba(3,19,39,.06); }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .panel-head h2 { margin: 6px 0 0; color: var(--navy); font: 500 30px Georgia, serif; }
@@ -300,6 +323,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .request-visual-grid { grid-template-columns: 1fr; }
   .whatsapp-inbox-section { padding: 0 16px; }
   .whatsapp-inbox-board { grid-template-columns: 1fr; }
+  .request-archive-section { padding: 0 16px; }
+  .request-archive-head { flex-direction: column; align-items: flex-start; }
+  .request-archive-grid { grid-template-columns: 1fr; }
   .whatsapp-ticket-progress { grid-template-columns: 1fr 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; padding: 0 16px 42px; }
   .panel { padding: 20px; }

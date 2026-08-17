@@ -1118,6 +1118,48 @@ export default function Home() {
         </article>}
       </section>
 
+      <section className="request-archive-section" data-section="agenda">
+        <div className="request-archive-head">
+          <div>
+            <span className="eyebrow">ARCHIVIO RICHIESTE</span>
+            <h2>Richieste chiuse e tracciate.</h2>
+            <p>Qui ritrovi gli interventi archiviati con ultimo aggiornamento, categoria e operatore suggerito.</p>
+          </div>
+          <div className="request-archive-summary">
+            <b>{archivedWhatsappThreads.length}</b>
+            <small>richieste archiviate</small>
+          </div>
+        </div>
+        <div className="request-archive-grid">
+          {!archivedWhatsappThreads.length && <div className="archive-empty"><b>Nessuna richiesta archiviata</b><span>Quando chiudi una richiesta dalla Inbox WhatsApp, comparirà qui con il suo storico.</span></div>}
+          {archivedWhatsappThreads.map((item) => {
+            const latestActivity = (whatsappActivityLog[item.id] ?? []).slice(-1)[0];
+            return <article className="archive-card" key={item.id}>
+              <div className="archive-card-top">
+                <span>{item.status}</span>
+                <small>{item.time}</small>
+              </div>
+              <h3>{item.client}</h3>
+              <p>{item.issue}</p>
+              <div className="archive-card-meta">
+                <strong>{item.category}</strong>
+                <strong>{item.location}</strong>
+              </div>
+              <div className="archive-card-details">
+                <span>Barca: {item.boat}</span>
+                <span>Operatore: {item.suggestedOperator}</span>
+              </div>
+              {latestActivity && <div className="archive-card-history"><b>Ultimo aggiornamento</b><small>{latestActivity.time} - {latestActivity.text}</small></div>}
+              <button onClick={() => {
+                setSelectedWhatsappThreadId(item.id);
+                setInboxStatusFilter("Chiusa");
+                goTo("home");
+              }}>Apri nella Inbox</button>
+            </article>;
+          })}
+        </div>
+      </section>
+
       <section className="access-areas" data-section="agenda">
         <span className="eyebrow">AREE DEL TUO ACCESSO</span>
         <h2>{accountType === "owner" ? "Controllo completo" : accountType === "company" ? "Gestione ditta" : accountType === "operator" ? "Spazio operatore" : "Spazio privato"}</h2>
