@@ -15,6 +15,7 @@ type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
 type DirectoryProvider = { id: string; name: string; category: string; locations: LocationKey[]; services: string[]; note: string; website: string; email?: string; whatsapp?: string; phone?: string };
 type InboxStatus = "Nuova" | "Assegnata" | "In lavorazione" | "Chiusa";
+type InboxActivity = { id: string; time: string; text: string };
 type WhatsappInboxItem = {
   id: string;
   client: string;
@@ -126,6 +127,20 @@ const whatsappInboxItems: WhatsappInboxItem[] = [
 ];
 
 const inboxStatusOrder: InboxStatus[] = ["Nuova", "Assegnata", "In lavorazione", "Chiusa"];
+const initialWhatsappActivityLog: Record<string, InboxActivity[]> = {
+  "thread-salpa-ancora": [
+    { id: "a-1", time: "09:14", text: "Messaggio ricevuto da WhatsApp Business." },
+    { id: "a-2", time: "09:15", text: "Richiesta classificata come elettrica / coperta con priorità alta." },
+  ],
+  "thread-pulizia-teak": [
+    { id: "a-3", time: "10:02", text: "Richiesta ricevuta e ordinata." },
+    { id: "a-4", time: "10:10", text: "Assegnata a Blue Detail Porto Cervo." },
+  ],
+  "thread-ricambio-pompa": [
+    { id: "a-5", time: "11:27", text: "Cliente inviato codice parziale e foto iniziale." },
+    { id: "a-6", time: "11:34", text: "Aperta ricerca ricambio compatibile con fornitore locale." },
+  ],
+};
 
 const shopCategories = [
   { id: "safety", symbol: "✦", tone: "safety", name: "Sicurezza e dotazioni", note: "Giubbotti, salvagenti, estintori, segnali e dotazioni per l'equipaggio", source: "SVB", providers: ["SVB", "TREM", "FNI", "Motomarine"], badge: "Sicurezza" },
@@ -317,6 +332,7 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>("it");
   const [showDemoData, setShowDemoData] = useState(false);
   const [whatsappThreads, setWhatsappThreads] = useState<WhatsappInboxItem[]>(whatsappInboxItems);
+  const [whatsappActivityLog, setWhatsappActivityLog] = useState<Record<string, InboxActivity[]>>(initialWhatsappActivityLog);
   const [inboxStatusFilter, setInboxStatusFilter] = useState<InboxStatus | "Tutte">("Tutte");
   const [selectedWhatsappThreadId, setSelectedWhatsappThreadId] = useState(whatsappInboxItems[0].id);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
@@ -432,6 +448,8 @@ export default function Home() {
     "In lavorazione": whatsappThreads.filter((item) => item.status === "In lavorazione").length,
     Chiusa: whatsappThreads.filter((item) => item.status === "Chiusa").length,
   }), [whatsappThreads]);
+  const selectedWhatsappActivity = selectedWhatsappThread ? (whatsappActivityLog[selectedWhatsappThread.id] ?? []) : [];
+  const archivedWhatsappThreads = useMemo(() => whatsappThreads.filter((item) => item.status === "Chiusa").slice().reverse(), [whatsappThreads]);
   const operatorCount = (category: string) => {
     const registered = showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
     const directory = publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && directoryMatchesCategory(provider, category)).length;
@@ -456,8 +474,16 @@ export default function Home() {
     notify(`Localita impostata su ${nextLocation}`);
   };
 
+  const timeNowLabel = () => new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+  const appendWhatsappActivity = (threadId: string, text: string) => {
+    const entry: InboxActivity = { id: `${threadId}-${Date.now()}`, time: timeNowLabel(), text };
+    setWhatsappActivityLog((current) => ({ ...current, [threadId]: [...(current[threadId] ?? []), entry] }));
+  };
+
   const updateWhatsappThreadStatus = (threadId: string, nextStatus: InboxStatus) => {
     setWhatsappThreads((current) => current.map((item) => item.id === threadId ? { ...item, status: nextStatus } : item));
+    appendWhatsappActivity(threadId, `Stato aggiornato a ${nextStatus}.`);
     notify(`Richiesta aggiornata: ${nextStatus}`);
   };
 
@@ -467,6 +493,19 @@ export default function Home() {
     const currentIndex = inboxStatusOrder.indexOf(current.status);
     const nextStatus = inboxStatusOrder[Math.min(currentIndex + 1, inboxStatusOrder.length - 1)];
     updateWhatsappThreadStatus(threadId, nextStatus);
+  };
+
+  const archiveWhatsappThread = (threadId: string) => {
+    updateWhatsappThreadStatus(threadId, "Chiusa");
+    appendWhatsappActivity(threadId, "Richiesta archiviata nello storico interventi.");
+  };
+
+  const createWhatsappIntervention = (threadId: string) => {
+    const thread = whatsappThreads.find((item) => item.id === threadId);
+    if (!thread) return;
+    appendWhatsappActivity(threadId, `Intervento creato e pronto per agenda tecnica: ${thread.issue}.`);
+    goTo("agenda");
+    notify("Intervento creato in demo");
   };
 
   const saveWorkspaceItem = async (kind: "task" | "purchase", title: string, details: string) => {
@@ -965,6 +1004,13 @@ export default function Home() {
               </div>
             </button>)}
             {!filteredWhatsappThreads.length && <div className="whatsapp-inbox-empty"><b>Nessuna richiesta in questo stato</b><span>Qui compariranno le conversazioni WhatsApp appena entrano o cambiano fase.</span></div>}
+            <div className="whatsapp-archive-card">
+              <span>Archivio recente</span>
+              {archivedWhatsappThreads.length ? archivedWhatsappThreads.map((item) => <div key={item.id}>
+                <b>{item.client}</b>
+                <small>{item.issue}</small>
+              </div>) : <small>Nessuna richiesta chiusa ancora nella demo.</small>}
+            </div>
           </aside>
           {selectedWhatsappThread && <article className="whatsapp-ticket-card" aria-label="Dettaglio richiesta selezionata">
             <div className="whatsapp-ticket-head">
@@ -999,11 +1045,21 @@ export default function Home() {
                 {selectedWhatsappThread.missing.map((item) => <small key={item}>{item}</small>)}
               </div>
             </div>
+            <div className="whatsapp-ticket-history">
+              <span>Storico attivita</span>
+              <div>
+                {selectedWhatsappActivity.map((item) => <article key={item.id}>
+                  <small>{item.time}</small>
+                  <p>{item.text}</p>
+                </article>)}
+              </div>
+            </div>
             <div className="whatsapp-ticket-actions">
               <button onClick={() => updateWhatsappThreadStatus(selectedWhatsappThread.id, "Assegnata")}>Assegna</button>
               <button onClick={() => advanceWhatsappThread(selectedWhatsappThread.id)}>Avanza stato</button>
               <button onClick={() => setChat(true)}>Risposta pronta</button>
-              <button onClick={() => goTo("agenda")}>Crea intervento</button>
+              <button onClick={() => createWhatsappIntervention(selectedWhatsappThread.id)}>Crea intervento</button>
+              <button onClick={() => archiveWhatsappThread(selectedWhatsappThread.id)}>Archivia</button>
             </div>
           </article>}
         </div>
