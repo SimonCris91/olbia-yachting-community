@@ -7,7 +7,7 @@ export const profiles = sqliteTable("profiles", {
   email: text("email"),
   displayName: text("display_name"),
   telegram: text("telegram"),
-  role: text("role", { enum: ["private", "operator", "company"] }).notNull().default("private"),
+  role: text("role", { enum: ["private", "operator", "company", "owner"] }).notNull().default("private"),
   plan: text("plan", { enum: ["standard", "premium", "yards"] }).notNull().default("standard"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [uniqueIndex("idx_profiles_user_id").on(table.userId)]);

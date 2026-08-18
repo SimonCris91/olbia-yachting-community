@@ -1,8 +1,10 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
-const roles = ["private", "operator", "company"] as const;
+const roles = ["private", "operator", "company", "owner"] as const;
+const plans = ["standard", "premium", "yards"] as const;
 type Role = (typeof roles)[number];
+type Plan = (typeof plans)[number];
 
 async function currentProfile() {
   const user = await getChatGPTUser();
@@ -27,11 +29,13 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const { user } = await currentProfile();
   if (!user) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  const payload = await request.json() as { role?: Role; telegram?: string | null };
+  const payload = await request.json() as { role?: Role; plan?: Plan; telegram?: string | null };
   if (payload.role && !roles.includes(payload.role)) return Response.json({ error: "Ruolo non valido" }, { status: 400 });
+  if (payload.plan && !plans.includes(payload.plan)) return Response.json({ error: "Piano non valido" }, { status: 400 });
   if (payload.role) await env.DB.prepare("UPDATE profiles SET role = ? WHERE user_id = ?").bind(payload.role, user.userId).run();
+  if (payload.plan) await env.DB.prepare("UPDATE profiles SET plan = ? WHERE user_id = ?").bind(payload.plan, user.userId).run();
   if (payload.telegram !== undefined) {
     await env.DB.prepare("UPDATE profiles SET telegram = ? WHERE user_id = ?").bind(payload.telegram?.trim() || null, user.userId).run();
   }
-  return Response.json({ role: payload.role, telegram: payload.telegram?.trim() || null });
+  return Response.json({ role: payload.role, plan: payload.plan, telegram: payload.telegram?.trim() || null });
 }

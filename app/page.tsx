@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type Tab = "home" | "agenda" | "scan" | "shop" | "community" | "profile";
 type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
 type AccountType = "private" | "operator" | "company" | "owner";
+type PlanType = "Standard" | "Premium" | "Cantieri";
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
 type SupplyOrder = { id: number; title: string; detail: string; done: boolean };
@@ -46,6 +47,9 @@ type RequestLauncher = {
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Community Assistant";
 const REQUEST_ASSISTANT_NAME = "Yachting Community Assistant";
+const apiPlanToUi = (value?: string | null): PlanType => value === "premium" ? "Premium" : value === "yards" ? "Cantieri" : "Standard";
+const uiPlanToApi = (value: PlanType) => value === "Premium" ? "premium" : value === "Cantieri" ? "yards" : "standard";
+const planBadgeClass = (value: PlanType) => value === "Premium" ? "premium" : value === "Cantieri" ? "cantieri" : "standard";
 const requestSteps = [
   { id: "01", title: "Raccogli la richiesta", note: "Nome, mezzo, zona, urgenza e foto in un solo passaggio." },
   { id: "02", title: "Ordina il problema", note: "Categoria lavoro, priorita e domande utili prima del preventivo." },
@@ -320,8 +324,8 @@ export default function Home() {
   const [yardJobs, setYardJobs] = useState<YardJob[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [chat, setChat] = useState(false);
-  const [plan, setPlan] = useState<"Standard" | "Premium">("Standard");
-  const [accountType, setAccountType] = useState<AccountType>("owner");
+  const [plan, setPlan] = useState<PlanType>("Standard");
+  const [accountType, setAccountType] = useState<AccountType>("private");
   const [location, setLocation] = useState<LocationKey>("Olbia");
   const [yardOpen, setYardOpen] = useState(false);
   const [chatText, setChatText] = useState("");
@@ -360,12 +364,12 @@ export default function Home() {
   useEffect(() => {
     const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
     const savedLanguage = localStorage.getItem("yachting-assistant-language") as Language | null;
-    const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
+    const savedPlan = localStorage.getItem("marinaio-plan") as PlanType | null;
     const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
     const savedDemoMode = localStorage.getItem("barcaora-demo-mode");
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedLanguage && ["it", "en", "fr", "es", "de"].includes(savedLanguage)) setLanguage(savedLanguage);
-    if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
+    if (savedPlan === "Standard" || savedPlan === "Premium" || savedPlan === "Cantieri") setPlan(savedPlan);
     if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
     if (savedDemoMode === "true") setShowDemoData(true);
   }, []);
@@ -381,12 +385,13 @@ export default function Home() {
       try {
         const profileResponse = await fetch("/api/profile");
         if (!profileResponse.ok) return;
-        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: AccountType } };
+        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: AccountType; plan?: "standard" | "premium" | "yards" } };
         setSignedIn(true);
         setCurrentUserId(profileData.profile?.userId ?? "");
         setProfileName(profileData.profile?.displayName ?? "Utente");
         setTelegramHandle(profileData.profile?.telegram ?? "");
         if (profileData.profile?.role) setAccountType(profileData.profile.role);
+        if (profileData.profile?.plan) setPlan(apiPlanToUi(profileData.profile.plan));
         const workspaceResponse = await fetch("/api/workspace");
         if (workspaceResponse.ok) {
           const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase" | "order" | "job"; title: string; details: string; done: boolean }> };
@@ -840,11 +845,6 @@ export default function Home() {
   };
 
   const changeAccountType = async (nextRole: AccountType) => {
-    if (nextRole === "owner") {
-      setAccountType("owner");
-      notify("Vista titolare attivata su questo dispositivo");
-      return;
-    }
     try {
       const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: nextRole }) });
       const data = await response.json() as { error?: string; signIn?: string };
@@ -857,6 +857,26 @@ export default function Home() {
       notify("Ruolo aggiornato");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Impossibile aggiornare il ruolo");
+    }
+  };
+
+  const savePlanSelection = async (nextPlan: PlanType) => {
+    if (!signedIn) {
+      setPlan(nextPlan);
+      notify(`Piano ${nextPlan} salvato su questo dispositivo`);
+      return;
+    }
+    try {
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: uiPlanToApi(nextPlan) }) });
+      const data = await response.json() as { error?: string; signIn?: string; plan?: "standard" | "premium" | "yards" };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile aggiornare il piano");
+      }
+      setPlan(apiPlanToUi(data.plan ?? uiPlanToApi(nextPlan)));
+      notify(nextPlan === "Premium" || nextPlan === "Cantieri" ? `Piano ${nextPlan} attivato in anteprima sul tuo account` : "Piano Standard selezionato");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile aggiornare il piano");
     }
   };
 
@@ -922,7 +942,7 @@ export default function Home() {
               {(Object.keys(locationData) as LocationKey[]).map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
-          <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
+          <button className={`plan-badge ${planBadgeClass(plan)}`} onClick={() => goTo("profile")}>{plan}</button>
           <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
           <button className="telegram-switch" type="button" onClick={openTelegramLink}>Telegram</button>
           <a className="account-switch" href="/signout-with-chatgpt?return_to=%2F">Cambia account</a>
@@ -1287,9 +1307,10 @@ export default function Home() {
       </section>}
 
       <section className="plans" data-section="profile" id="plans">
-        <div className="plans-intro"><span className="eyebrow">PIANI {BRAND_NAME.toUpperCase()}</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
-        <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
-        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Yachting-Assistant-Android.apk" download>Scarica l'app Android</a><a className="profile-signout" href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a><small className="plan-note">Se condividi il link, ogni persona deve accedere col proprio account per vedere il proprio spazio e non quello di chi ha gia aperto l'app su quel dispositivo.</small></div>
+        <div className="plans-intro"><span className="eyebrow">PIANI {BRAND_NAME.toUpperCase()}</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita. Cantieri organizza ordini, commesse e lavoro operativo.</p></div>
+        <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => void savePlanSelection("Standard")}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
+        <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => void savePlanSelection("Premium")}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Yachting-Assistant-Android.apk" download>Scarica l'app Android</a><a className="profile-signout" href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a><small className="plan-note">Se condividi il link, ogni persona deve accedere col proprio account per vedere il proprio spazio e non quello di chi ha gia aperto l'app su quel dispositivo.</small></div>
+        {(accountType === "company" || accountType === "owner") && <div className={`plan-card ${plan === "Cantieri" ? "selected" : ""}`}><span>CANTIERI</span><h3>Per ditta e refit</h3><strong>Area operativa</strong><ul><li>Ordini fornitori separati</li><li>Commesse salvate nel profilo</li><li>Accesso operativo esteso</li><li>Storico lavori in evoluzione</li></ul><button onClick={() => void savePlanSelection("Cantieri")}>{plan === "Cantieri" ? "Piano attuale" : "Attiva Cantieri"}</button><small className="plan-note">La struttura operativa e gia attiva. Team multiutente, notifiche e billing reale arrivano nella fase successiva.</small></div>}
         <div className={`plan-card telegram-card ${telegramHandle ? "selected" : ""}`}><div className="telegram-copy"><span>TELEGRAM</span><h3>Contatto diretto</h3><p>Salva il tuo username, canale o link Telegram. Lo ritrovi nel profilo e nei contatti rapidi degli operatori.</p></div><div className="telegram-form"><label><span>Username o link Telegram</span><input value={telegramHandle} onChange={(event) => setTelegramHandle(event.target.value)} placeholder="@nomeutente o https://t.me/..." /></label><button type="button" onClick={() => void saveTelegramProfile()}>Salva Telegram</button>{normalizeTelegramLink(telegramHandle) && <a className="telegram-link" href={normalizeTelegramLink(telegramHandle)} target="_blank" rel="noreferrer">Apri Telegram</a>}</div><small className="plan-note">Svuota il campo e salva di nuovo per rimuoverlo. Per automazioni vere serve un bot token; qui hai il collegamento operativo persistente, gratuito e pronto all'uso.</small></div>
       </section>
 
