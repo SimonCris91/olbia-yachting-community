@@ -9,7 +9,7 @@ type Task = { id: number; title: string; boat: string; due: string; priority: "A
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
-type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
+type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico" | "Chiusa"; acceptedBy?: string };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; telegram?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
@@ -327,6 +327,7 @@ export default function Home() {
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [profileName, setProfileName] = useState("");
   const [telegramHandle, setTelegramHandle] = useState("");
   const [language, setLanguage] = useState<Language>("it");
@@ -376,8 +377,9 @@ export default function Home() {
       try {
         const profileResponse = await fetch("/api/profile");
         if (!profileResponse.ok) return;
-        const profileData = await profileResponse.json() as { profile?: { displayName?: string; telegram?: string; role?: AccountType } };
+        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: AccountType } };
         setSignedIn(true);
+        setCurrentUserId(profileData.profile?.userId ?? "");
         setProfileName(profileData.profile?.displayName ?? "Utente");
         setTelegramHandle(profileData.profile?.telegram ?? "");
         if (profileData.profile?.role) setAccountType(profileData.profile.role);
@@ -390,16 +392,16 @@ export default function Home() {
         }
         const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
         if (!response.ok) return;
-        const data = await response.json() as { requests?: Array<{ id: number; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted"; acceptedBy?: string; created?: string }> };
+        const data = await response.json() as { requests?: Array<{ id: number; ownerId?: string; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted" | "closed"; acceptedBy?: string; created?: string }> };
         setCommunityRequests((data.requests ?? []).map((item) => ({
           id: item.id,
-          ownerId: "me",
+          ownerId: item.ownerId ?? currentUserId ?? "me",
           title: item.title,
           details: item.details,
           category: item.category,
           location: item.location,
           created: item.created ? new Date(item.created).toLocaleDateString("it-IT") : "Adesso",
-          status: item.status === "accepted" ? "Presa in carico" : "Aperta",
+          status: item.status === "accepted" ? "Presa in carico" : item.status === "closed" ? "Chiusa" : "Aperta",
           acceptedBy: item.acceptedBy,
         })));
         const operatorsResponse = await fetch(`/api/operators?location=${encodeURIComponent(location)}`);
@@ -412,7 +414,7 @@ export default function Home() {
       finally { setAuthChecked(true); }
     };
     void loadSavedRequests();
-  }, [location]);
+  }, [currentUserId, location]);
 
   const progress = useMemo(() => tasks.length ? Math.round(tasks.filter((task) => task.done).length / tasks.length * 100) : 0, [tasks]);
   const currentLocation = locationData[location];
@@ -424,13 +426,15 @@ export default function Home() {
     return `BUONA SERA, ${name}`;
   }, [profileName]);
   const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
+  const archivedRequests = useMemo(() => allRequests.filter((request) => request.status === "Chiusa"), [allRequests]);
+  const activeRequests = useMemo(() => allRequests.filter((request) => request.status !== "Chiusa"), [allRequests]);
   const visibleShopCategories = useMemo(() => {
     const query = shopQuery.trim().toLowerCase();
     return query ? shopCategories.filter((item) => `${item.name} ${item.note} ${item.badge} ${item.providers.join(" ")}`.toLowerCase().includes(query)) : shopCategories;
   }, [shopQuery]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
-  const visibleRequests = allRequests.filter((request) => {
-    if (accountType === "private") return request.ownerId === "me";
+  const visibleRequests = activeRequests.filter((request) => {
+    if (accountType === "private") return !currentUserId || request.ownerId === currentUserId;
     if (accountType === "operator") return request.location === location && request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category));
     return request.location === location;
   });
@@ -800,6 +804,22 @@ export default function Home() {
     }
   };
 
+  const closeRequest = async (id: number) => {
+    try {
+      const response = await fetch("/api/requests", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action: "close" }) });
+      const data = await response.json() as { acceptedBy?: string; error?: string; signIn?: string };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile chiudere la richiesta");
+      }
+      setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Chiusa", acceptedBy: data.acceptedBy ?? item.acceptedBy } : item));
+      notify("Richiesta chiusa e archiviata");
+      goTo("agenda");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile chiudere la richiesta");
+    }
+  };
+
   const changeAccountType = async (nextRole: AccountType) => {
     if (nextRole === "owner") {
       setAccountType("owner");
@@ -1123,38 +1143,35 @@ export default function Home() {
           <div>
             <span className="eyebrow">ARCHIVIO RICHIESTE</span>
             <h2>Richieste chiuse e tracciate.</h2>
-            <p>Qui ritrovi gli interventi archiviati con ultimo aggiornamento, categoria e operatore suggerito.</p>
+            <p>Qui ritrovi le richieste chiuse dal network con categoria, zona e riferimento operativo.</p>
           </div>
           <div className="request-archive-summary">
-            <b>{archivedWhatsappThreads.length}</b>
+            <b>{archivedRequests.length}</b>
             <small>richieste archiviate</small>
           </div>
         </div>
         <div className="request-archive-grid">
-          {!archivedWhatsappThreads.length && <div className="archive-empty"><b>Nessuna richiesta archiviata</b><span>Quando chiudi una richiesta dalla Inbox WhatsApp, comparirà qui con il suo storico.</span></div>}
-          {archivedWhatsappThreads.map((item) => {
-            const latestActivity = (whatsappActivityLog[item.id] ?? []).slice(-1)[0];
+          {!archivedRequests.length && <div className="archive-empty"><b>Nessuna richiesta archiviata</b><span>Quando chiudi una richiesta dalla rete interventi, comparirà qui separata da quelle attive.</span></div>}
+          {archivedRequests.map((item) => {
             return <article className="archive-card" key={item.id}>
               <div className="archive-card-top">
                 <span>{item.status}</span>
-                <small>{item.time}</small>
+                <small>{item.created}</small>
               </div>
-              <h3>{item.client}</h3>
-              <p>{item.issue}</p>
+              <h3>{item.title}</h3>
+              <p>{item.details}</p>
               <div className="archive-card-meta">
                 <strong>{item.category}</strong>
                 <strong>{item.location}</strong>
               </div>
               <div className="archive-card-details">
-                <span>Barca: {item.boat}</span>
-                <span>Operatore: {item.suggestedOperator}</span>
+                <span>Stato finale: {item.status}</span>
+                <span>Operatore: {item.acceptedBy ?? "Non indicato"}</span>
               </div>
-              {latestActivity && <div className="archive-card-history"><b>Ultimo aggiornamento</b><small>{latestActivity.time} - {latestActivity.text}</small></div>}
+              <div className="archive-card-history"><b>Ultimo aggiornamento</b><small>{item.acceptedBy ? `Presa in carico da ${item.acceptedBy}` : "Richiesta chiusa e archiviata."}</small></div>
               <button onClick={() => {
-                setSelectedWhatsappThreadId(item.id);
-                setInboxStatusFilter("Chiusa");
-                goTo("home");
-              }}>Apri nella Inbox</button>
+                goTo("community");
+              }}>Apri in richieste</button>
             </article>;
           })}
         </div>
@@ -1194,10 +1211,10 @@ export default function Home() {
           {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
           <button className="publish-job" onClick={() => openRequestLauncher({ title: "Richiesta assistenza", category: "Altro", details: `Zona ${location}. Descrivi qui il problema, la barca, l'urgenza e allega una foto se serve.`, targetName: ASSISTANT_NAME, chatPrompt: `Aiutami a impostare una richiesta di assistenza nautica nella zona di ${location}. Ti dirò barca, problema, urgenza e categoria.` })}>+ Avvia una richiesta ordinata</button>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
-            {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
+            {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste attive a ${location}.` : `Nessuna richiesta attiva visibile per questo accesso a ${location}.`}</div>}
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
               const isDemo = request.ownerId.startsWith("demo-");
-              return <article key={request.id}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>OK {request.acceptedBy} e disponibile</em>}{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}</article>;
+              return <article key={request.id}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>OK {request.acceptedBy} e disponibile</em>}{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{request.status !== "Chiusa" && !isDemo && (accountType !== "private" || request.ownerId === currentUserId) && <button onClick={() => closeRequest(request.id)}>Chiudi e archivia</button>}</article>;
             })}
           </div>
         </div>

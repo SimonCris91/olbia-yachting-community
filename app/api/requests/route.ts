@@ -14,7 +14,23 @@ export async function GET(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
   const location = new URL(request.url).searchParams.get("location");
-  const base = "SELECT id, owner_user_id AS ownerId, title, details, category, location, status, accepted_by_user_id AS acceptedBy, created_at AS created FROM service_requests";
+  const base = `
+    SELECT
+      id,
+      owner_user_id AS ownerId,
+      title,
+      details,
+      category,
+      location,
+      status,
+      COALESCE(
+        (SELECT display_name FROM operators WHERE owner_user_id = service_requests.accepted_by_user_id LIMIT 1),
+        (SELECT display_name FROM profiles WHERE user_id = service_requests.accepted_by_user_id LIMIT 1),
+        accepted_by_user_id
+      ) AS acceptedBy,
+      created_at AS created
+    FROM service_requests
+  `;
   let rows;
   if (actor.role === "private") rows = await env.DB.prepare(`${base} WHERE owner_user_id = ? ORDER BY id DESC LIMIT 50`).bind(actor.user.userId).all();
   else if (location && locations.includes(location)) rows = await env.DB.prepare(`${base} WHERE location = ? ORDER BY id DESC LIMIT 50`).bind(location).all();
@@ -35,10 +51,22 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  if (actor.role === "private") return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
   const body = await request.json() as { id?: number; action?: string };
-  if (!Number.isInteger(body.id) || body.action !== "accept") return Response.json({ error: "Azione non valida" }, { status: 400 });
-  const result = await env.DB.prepare("UPDATE service_requests SET status = 'accepted', accepted_by_user_id = ? WHERE id = ? AND status = 'open'").bind(actor.user.userId, body.id).run();
-  if (!result.meta.changes) return Response.json({ error: "Richiesta non più disponibile" }, { status: 409 });
-  return Response.json({ id: body.id, status: "accepted", acceptedBy: actor.user.displayName });
+  if (!Number.isInteger(body.id) || !["accept", "close"].includes(body.action ?? "")) return Response.json({ error: "Azione non valida" }, { status: 400 });
+
+  if (body.action === "accept") {
+    if (actor.role === "private") return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
+    const result = await env.DB.prepare("UPDATE service_requests SET status = 'accepted', accepted_by_user_id = ? WHERE id = ? AND status = 'open'").bind(actor.user.userId, body.id).run();
+    if (!result.meta.changes) return Response.json({ error: "Richiesta non più disponibile" }, { status: 409 });
+    return Response.json({ id: body.id, status: "accepted", acceptedBy: actor.user.displayName });
+  }
+
+  const current = await env.DB.prepare("SELECT owner_user_id AS ownerUserId, accepted_by_user_id AS acceptedByUserId, status FROM service_requests WHERE id = ? LIMIT 1").bind(body.id).first<{ ownerUserId: string; acceptedByUserId: string | null; status: "open" | "accepted" | "closed" }>();
+  if (!current) return Response.json({ error: "Richiesta non trovata" }, { status: 404 });
+  const canClose = current.ownerUserId === actor.user.userId || current.acceptedByUserId === actor.user.userId;
+  if (!canClose) return Response.json({ error: "Non puoi chiudere questa richiesta" }, { status: 403 });
+  if (current.status === "closed") return Response.json({ id: body.id, status: "closed", acceptedBy: actor.user.displayName ?? undefined });
+
+  await env.DB.prepare("UPDATE service_requests SET status = 'closed' WHERE id = ?").bind(body.id).run();
+  return Response.json({ id: body.id, status: "closed", acceptedBy: actor.user.displayName ?? undefined });
 }
