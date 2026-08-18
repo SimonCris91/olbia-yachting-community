@@ -53,7 +53,7 @@ export const serviceRequests = sqliteTable("service_requests", {
 export const workspaceItems = sqliteTable("workspace_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ownerUserId: text("owner_user_id").notNull(),
-  kind: text("kind", { enum: ["task", "purchase"] }).notNull(),
+  kind: text("kind", { enum: ["task", "purchase", "order", "job"] }).notNull(),
   title: text("title").notNull(),
   details: text("details").notNull().default(""),
   done: integer("done", { mode: "boolean" }).notNull().default(false),

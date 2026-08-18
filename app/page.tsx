@@ -7,6 +7,8 @@ type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alg
 type AccountType = "private" | "operator" | "company" | "owner";
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
+type SupplyOrder = { id: number; title: string; detail: string; done: boolean };
+type YardJob = { id: number; title: string; detail: string; done: boolean };
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
 type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico" | "Chiusa"; acceptedBy?: string };
@@ -314,6 +316,8 @@ function RichText({ text }: { text: string }) {
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [orders, setOrders] = useState<SupplyOrder[]>([]);
+  const [yardJobs, setYardJobs] = useState<YardJob[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [chat, setChat] = useState(false);
   const [plan, setPlan] = useState<"Standard" | "Premium">("Standard");
@@ -336,7 +340,7 @@ export default function Home() {
   const [whatsappActivityLog, setWhatsappActivityLog] = useState<Record<string, InboxActivity[]>>(initialWhatsappActivityLog);
   const [inboxStatusFilter, setInboxStatusFilter] = useState<InboxStatus | "Tutte">("Tutte");
   const [selectedWhatsappThreadId, setSelectedWhatsappThreadId] = useState(whatsappInboxItems[0].id);
-  const [formMode, setFormMode] = useState<"task" | "purchase" | "request" | null>(null);
+  const [formMode, setFormMode] = useState<"task" | "purchase" | "order" | "job" | "request" | null>(null);
   const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
@@ -385,10 +389,12 @@ export default function Home() {
         if (profileData.profile?.role) setAccountType(profileData.profile.role);
         const workspaceResponse = await fetch("/api/workspace");
         if (workspaceResponse.ok) {
-          const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase"; title: string; details: string; done: boolean }> };
+          const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase" | "order" | "job"; title: string; details: string; done: boolean }> };
           const savedItems = workspaceData.items ?? [];
           setTasks(savedItems.filter((item) => item.kind === "task").map((item) => ({ id: item.id, title: item.title, boat: item.details || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: item.done })));
           setPurchases(savedItems.filter((item) => item.kind === "purchase").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Da cercare", price: "-", done: item.done })));
+          setOrders(savedItems.filter((item) => item.kind === "order").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Ordine da completare", done: item.done })));
+          setYardJobs(savedItems.filter((item) => item.kind === "job").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Commessa in lavorazione", done: item.done })));
         }
         const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
         if (!response.ok) return;
@@ -454,6 +460,10 @@ export default function Home() {
   }), [whatsappThreads]);
   const selectedWhatsappActivity = selectedWhatsappThread ? (whatsappActivityLog[selectedWhatsappThread.id] ?? []) : [];
   const archivedWhatsappThreads = useMemo(() => whatsappThreads.filter((item) => item.status === "Chiusa").slice().reverse(), [whatsappThreads]);
+  const openTasksCount = useMemo(() => tasks.filter((task) => !task.done).length, [tasks]);
+  const pendingOrdersCount = useMemo(() => orders.filter((order) => !order.done).length, [orders]);
+  const activeJobsCount = useMemo(() => yardJobs.filter((job) => !job.done).length, [yardJobs]);
+  const completedJobsCount = useMemo(() => yardJobs.filter((job) => job.done).length, [yardJobs]);
   const operatorCount = (category: string) => {
     const registered = showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
     const directory = publicDirectoryProviders.filter((provider) => provider.locations.includes(location) && directoryMatchesCategory(provider, category)).length;
@@ -512,7 +522,7 @@ export default function Home() {
     notify("Intervento creato in demo");
   };
 
-  const saveWorkspaceItem = async (kind: "task" | "purchase", title: string, details: string) => {
+  const saveWorkspaceItem = async (kind: "task" | "purchase" | "order" | "job", title: string, details: string) => {
     const response = await fetch("/api/workspace", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, title, details }) });
     const data = await response.json() as { item?: { id: number; title: string; details: string }; signIn?: string; error?: string };
     if (!response.ok) { if (data.signIn) window.location.href = data.signIn; throw new Error(data.error ?? "Impossibile salvare"); }
@@ -534,6 +544,15 @@ export default function Home() {
       const item = await saveWorkspaceItem("purchase", form.title.trim(), form.details.trim() || "Da cercare");
       setPurchases((items) => [...items, { id: item.id, title: item.title, detail: item.details, price: "-", done: false }]);
     }
+    if (formMode === "order") {
+      const item = await saveWorkspaceItem("order", form.title.trim(), form.details.trim() || "Ordine fornitore da completare");
+      setOrders((items) => [...items, { id: item.id, title: item.title, detail: item.details, done: false }]);
+    }
+    if (formMode === "job") {
+      const item = await saveWorkspaceItem("job", form.title.trim(), form.details.trim() || "Commessa aperta");
+      setYardJobs((items) => [...items, { id: item.id, title: item.title, detail: item.details, done: false }]);
+      setYardOpen(true);
+    }
     if (formMode === "request") {
       try {
         const response = await fetch("/api/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: form.title.trim(), details: form.details.trim(), category: form.category, location }) });
@@ -552,7 +571,7 @@ export default function Home() {
     setFormMode(null);
   };
 
-  const openForm = (mode: "task" | "purchase" | "request") => {
+  const openForm = (mode: "task" | "purchase" | "order" | "job" | "request") => {
     setForm({ title: "", category: "Meccanica", details: "" });
     setFormMode(mode);
   };
@@ -1136,6 +1155,13 @@ export default function Home() {
           {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => { const done = !item.done; setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done } : product)); void toggleWorkspaceItem(item.id, done).catch(() => notify("Impossibile aggiornare il prodotto")); }} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
           <button className="buy-button" onClick={() => notify("Confronto prezzi avviato sui portali nautici")}>Confronta prezzi e disponibilita</button>
         </article>}
+
+        {(accountType === "company" || accountType === "owner") && <article className="panel shopping-panel">
+          <div className="panel-head"><div><span className="eyebrow">ORDINI FORNITORI</span><h2>Ordini da seguire</h2></div><div className="panel-actions"><span className="count">{pendingOrdersCount}</span><button className="text-button" onClick={() => openForm("order")}>+ Aggiungi</button></div></div>
+          {!orders.length && <div className="empty-state"><b>Nessun ordine attivo</b><span>Qui puoi salvare ordini materiali, ricambi e acquisti da seguire con la ditta.</span><button onClick={() => openForm("order")}>Aggiungi ordine</button></div>}
+          {orders.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => { const done = !item.done; setOrders((items) => items.map((order) => order.id === item.id ? { ...order, done } : order)); void toggleWorkspaceItem(item.id, done).catch(() => notify("Impossibile aggiornare l'ordine")); }} /><span className="product-img">O</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.done ? "Chiuso" : "In corso"}</strong></label>)}
+          <button className="buy-button" onClick={() => setYardOpen(true)}>Apri commesse e avanzamento</button>
+        </article>}
       </section>
 
       <section className="request-archive-section" data-section="agenda">
@@ -1256,8 +1282,8 @@ export default function Home() {
       </section>
 
       {(accountType === "company" || accountType === "owner") && <section className="yard-strip">
-        <div><span className="eyebrow">MODALITA CANTIERE</span><h2>Ogni commessa sotto controllo.</h2><p>Imbarcazioni, squadre, attivita, materiali e avanzamento in un unico spazio condiviso.</p><small>Area in anteprima: la struttura c'e, ma i dati mostrati qui non sono ancora collegati a commesse reali.</small></div>
-        <button onClick={() => setYardOpen(true)}>Apri area cantieri</button>
+        <div><span className="eyebrow">MODALITA CANTIERE</span><h2>Ogni commessa sotto controllo.</h2><p>Imbarcazioni, squadre, attivita, materiali e avanzamento in un unico spazio condiviso.</p><small>{yardJobs.length ? `Hai ${activeJobsCount} commesse aperte, ${pendingOrdersCount} ordini da seguire e ${openTasksCount} mansioni ancora aperte.` : "Da qui puoi iniziare a salvare commesse reali del cantiere, una per una."}</small></div>
+        <button onClick={() => setYardOpen(true)}>{yardJobs.length ? "Apri area cantieri" : "Crea prima commessa"}</button>
       </section>}
 
       <section className="plans" data-section="profile" id="plans">
@@ -1283,11 +1309,11 @@ export default function Home() {
 
       {requestLauncher && <div className="modal-backdrop" onClick={() => setRequestLauncher(null)}><section className="request-launcher-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setRequestLauncher(null)}>x</button><span className="eyebrow">COME VUOI AVVIARE LA RICHIESTA</span><h2>{requestLauncher.targetName}</h2><p>{requestLauncher.details}</p><div className="request-launcher-actions"><button onClick={() => launchRequestChat(requestLauncher)}>Chat con {ASSISTANT_NAME}</button><button onClick={() => launchRequestForm(requestLauncher)}>Compila la richiesta</button>{requestLauncher.email && <button className="contact-email" onClick={() => launchRequestEmail(requestLauncher)}>Apri Email</button>}{requestLauncher.whatsapp && <button className="contact-whatsapp" onClick={() => launchRequestWhatsapp(requestLauncher)}>Apri WhatsApp</button>}</div><small className="plan-note">Il testo viene preparato in automatico, ma sei tu a confermare l'invio o il salvataggio.</small></section></div>}
 
-      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">{BRAND_NAME.toUpperCase()} CANTIERI</span><h2>Commesse attive</h2><small className="plan-note">Anteprima gestionale: questi dati servono a mostrare la struttura dell'area cantieri.</small><div className="job"><div><b>M/Y Aurora</b><small>Refit sala macchine - Consegna 18 agosto</small></div><strong>68%</strong><i><em style={{ width: "68%" }} /></i></div><div className="job"><div><b>S/Y Levante</b><small>Carena e antivegetativa - Consegna 22 agosto</small></div><strong>35%</strong><i><em style={{ width: "35%" }} /></i></div><div className="job-stats"><span><b>7</b><small>Mansioni aperte</small></span><span><b>3</b><small>Tecnici assegnati</small></span><span><b>2</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => notify("Nuova commessa pronta per essere creata")}>+ Nuova commessa</button></section></div>}
+      {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">{BRAND_NAME.toUpperCase()} CANTIERI</span><h2>Commesse attive</h2><small className="plan-note">Questa area ora salva commesse e ordini del tuo account. Pagamenti, clienti e squadre multiutente restano nella prossima fase.</small>{!yardJobs.length && <div className="empty-state"><b>Nessuna commessa salvata</b><span>Crea la prima commessa reale del cantiere e la ritroverai qui.</span><button onClick={() => openForm("job")}>Crea commessa</button></div>}{yardJobs.map((job) => <div className="job" key={job.id}><div><b>{job.title}</b><small>{job.detail}</small></div><strong>{job.done ? "100%" : "45%"}</strong><i><em style={{ width: job.done ? "100%" : "45%" }} /></i></div>)}<div className="job-stats"><span><b>{activeJobsCount}</b><small>Commesse aperte</small></span><span><b>{openTasksCount}</b><small>Mansioni aperte</small></span><span><b>{pendingOrdersCount}</b><small>Ordini in attesa</small></span><span><b>{completedJobsCount}</b><small>Commesse chiuse</small></span></div><button className="new-job" onClick={() => openForm("job")}>+ Nuova commessa</button></section></div>}
 
       {operatorEditorOpen && <div className="modal-backdrop" onClick={() => setOperatorEditorOpen(false)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); void saveOperatorProfile().catch((error: Error) => notify(error.message)); }}><button type="button" className="modal-close" onClick={() => setOperatorEditorOpen(false)}>x</button><span className="eyebrow">PROFILO OPERATORE</span><h2>{myOperatorProfile ? "Aggiorna il tuo profilo" : "Pubblica il tuo profilo"}</h2><label><span>Nome attivita</span><input autoFocus value={operatorForm.name} onChange={(event) => setOperatorForm({ ...operatorForm, name: event.target.value })} placeholder="Es. Nautica Gallura Service" required /></label><label><span>Categoria</span><select value={operatorForm.category} onChange={(event) => setOperatorForm({ ...operatorForm, category: event.target.value })}><option>Meccanica marina</option><option>Elettrica nautica</option><option>Elettronica</option><option>Cantieri & refit</option><option>Ricambi nautici</option><option>Tender e gommoni</option><option>Pulizia e detailing</option><option>Concierge yacht</option><option>Cambusa e forniture</option><option>Vele e rigging</option><option>Tappezzeria nautica</option><option>Ormeggi e marina</option></select></label><label><span>Localita coperte</span><div className="location-checks">{(Object.keys(locationData) as LocationKey[]).map((item) => <label key={item} className="check-option"><input type="checkbox" checked={operatorForm.locations.includes(item)} onChange={(event) => setOperatorForm((current) => ({ ...current, locations: event.target.checked ? [...current.locations, item] : current.locations.filter((locationItem) => locationItem !== item) }))} /><span>{item}</span></label>)}</div></label><label><span>Telefono</span><input value={operatorForm.phone} onChange={(event) => setOperatorForm({ ...operatorForm, phone: event.target.value })} placeholder="+39 ..." /></label><label><span>Email</span><input value={operatorForm.email} onChange={(event) => setOperatorForm({ ...operatorForm, email: event.target.value })} placeholder="info@azienda.it" /></label><label><span>Sito web</span><input value={operatorForm.website} onChange={(event) => setOperatorForm({ ...operatorForm, website: event.target.value })} placeholder="www.azienda.it" /></label><label><span>Telegram</span><input value={operatorForm.telegram} onChange={(event) => setOperatorForm({ ...operatorForm, telegram: event.target.value })} placeholder="@nomeutente o https://t.me/..." /></label><label><span>Tag servizi</span><input value={operatorForm.tags} onChange={(event) => setOperatorForm({ ...operatorForm, tags: event.target.value })} placeholder="Generatori, Batterie, Urgenze" /></label><label><span>Descrizione</span><textarea value={operatorForm.note} onChange={(event) => setOperatorForm({ ...operatorForm, note: event.target.value })} placeholder="Spiega servizi, tempi e area operativa" /></label><button className="entry-submit" type="submit">Salva profilo operatore</button></form></div>}
 
-      {formMode && <div className="modal-backdrop" onClick={() => setFormMode(null)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); submitForm(); }}><button type="button" className="modal-close" onClick={() => setFormMode(null)}>x</button><span className="eyebrow">{formMode === "request" ? "NUOVA RICHIESTA" : formMode === "task" ? "AGENDA DI BORDO" : "LISTA ACQUISTI"}</span><h2>{formMode === "request" ? `Richiedi un intervento a ${location}` : formMode === "task" ? "Aggiungi una mansione" : "Aggiungi un prodotto"}</h2><label><span>{formMode === "request" ? "Intervento richiesto" : formMode === "task" ? "Mansione" : "Prodotto"}</span><input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={formMode === "request" ? "Es. Controllo caricabatterie" : "Inserisci un titolo"} required /></label>{formMode === "request" && <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Meccanica</option><option>Elettrica</option><option>Elettronica</option><option>Refit</option><option>Pulizia</option><option>Altro</option></select></label>}<label><span>{formMode === "request" ? "Barca, marina e urgenza" : "Dettagli facoltativi"}</span><textarea value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder={formMode === "request" ? `Es. Marina di ${location}, M/Y 15 m, entro domani` : "Aggiungi informazioni"} /></label><button className="entry-submit" type="submit">{formMode === "request" ? "Pubblica richiesta" : "Salva"}</button></form></div>}
+      {formMode && <div className="modal-backdrop" onClick={() => setFormMode(null)}><form className="entry-modal" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); submitForm(); }}><button type="button" className="modal-close" onClick={() => setFormMode(null)}>x</button><span className="eyebrow">{formMode === "request" ? "NUOVA RICHIESTA" : formMode === "task" ? "AGENDA DI BORDO" : formMode === "purchase" ? "LISTA ACQUISTI" : formMode === "order" ? "ORDINE FORNITORE" : "COMMESSA CANTIERE"}</span><h2>{formMode === "request" ? `Richiedi un intervento a ${location}` : formMode === "task" ? "Aggiungi una mansione" : formMode === "purchase" ? "Aggiungi un prodotto" : formMode === "order" ? "Aggiungi un ordine" : "Aggiungi una commessa"}</h2><label><span>{formMode === "request" ? "Intervento richiesto" : formMode === "task" ? "Mansione" : formMode === "purchase" ? "Prodotto" : formMode === "order" ? "Ordine" : "Commessa"}</span><input autoFocus value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={formMode === "request" ? "Es. Controllo caricabatterie" : formMode === "order" ? "Es. Ordine giranti e filtri Volvo" : formMode === "job" ? "Es. Refit M/Y Aurora" : "Inserisci un titolo"} required /></label>{formMode === "request" && <label><span>Categoria</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>Meccanica</option><option>Elettrica</option><option>Elettronica</option><option>Refit</option><option>Pulizia</option><option>Altro</option></select></label>}<label><span>{formMode === "request" ? "Barca, marina e urgenza" : formMode === "order" ? "Fornitore, materiale o nota ordine" : formMode === "job" ? "Barca, lavoro e consegna prevista" : "Dettagli facoltativi"}</span><textarea value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder={formMode === "request" ? `Es. Marina di ${location}, M/Y 15 m, entro domani` : formMode === "order" ? "Es. Fornitore locale, consegna prevista venerdì, materiale urgente" : formMode === "job" ? "Es. Yacht 18 m, refit impianto elettrico, consegna entro fine mese" : "Aggiungi informazioni"} /></label><button className="entry-submit" type="submit">{formMode === "request" ? "Pubblica richiesta" : "Salva"}</button></form></div>}
     </main>
   );
 }
