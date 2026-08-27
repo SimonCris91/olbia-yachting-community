@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
-type Kind = "task" | "purchase";
-const kinds: Kind[] = ["task", "purchase"];
+type Kind = "task" | "purchase" | "job";
+const kinds: Kind[] = ["task", "purchase", "job"];
 
 async function userOrError() {
   const user = await getChatGPTUser();
