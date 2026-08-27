@@ -10,7 +10,7 @@ type Purchase = { id: number; title: string; detail: string; price: string; done
 type Job = { id: number; title: string; details: string; done: boolean };
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
-type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico"; acceptedBy?: string };
+type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico" | "Chiusa"; acceptedBy?: string; acceptedByUserId?: string };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; telegram?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
@@ -147,6 +147,7 @@ export default function Home() {
   const [communityRequests, setCommunityRequests] = useState<CommunityRequest[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [profileName, setProfileName] = useState("");
   const [telegramHandle, setTelegramHandle] = useState("");
   const [language, setLanguage] = useState<Language>("it");
@@ -188,8 +189,10 @@ export default function Home() {
       try {
         const profileResponse = await fetch("/api/profile");
         if (!profileResponse.ok) return;
-        const profileData = await profileResponse.json() as { profile?: { displayName?: string; telegram?: string; role?: AccountType } };
+        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: AccountType } };
+        const profileUserId = profileData.profile?.userId ?? "";
         setSignedIn(true);
+        setCurrentUserId(profileUserId);
         setProfileName(profileData.profile?.displayName ?? "Utente");
         setTelegramHandle(profileData.profile?.telegram ?? "");
         if (profileData.profile?.role) setAccountType(profileData.profile.role);
@@ -203,17 +206,18 @@ export default function Home() {
         }
         const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
         if (!response.ok) return;
-        const data = await response.json() as { requests?: Array<{ id: number; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted"; acceptedBy?: string; created?: string }> };
+        const data = await response.json() as { requests?: Array<{ id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted" | "closed"; acceptedBy?: string; acceptedByUserId?: string; created?: string }> };
         setCommunityRequests((data.requests ?? []).map((item) => ({
           id: item.id,
-          ownerId: "me",
+          ownerId: item.ownerId === profileUserId ? "me" : item.ownerId,
           title: item.title,
           details: item.details,
           category: item.category,
           location: item.location,
           created: item.created ? new Date(item.created).toLocaleDateString("it-IT") : "Adesso",
-          status: item.status === "accepted" ? "Presa in carico" : "Aperta",
+          status: item.status === "closed" ? "Chiusa" : item.status === "accepted" ? "Presa in carico" : "Aperta",
           acceptedBy: item.acceptedBy,
+          acceptedByUserId: item.acceptedByUserId,
         })));
         const operatorsResponse = await fetch(`/api/operators?location=${encodeURIComponent(location)}`);
         if (operatorsResponse.ok) {
@@ -240,7 +244,7 @@ export default function Home() {
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
     if (accountType === "private") return request.ownerId === "me";
-    if (accountType === "operator") return request.location === location && request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category));
+    if (accountType === "operator") return request.location === location && ((request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category))) || request.acceptedByUserId === currentUserId);
     return request.location === location;
   });
   const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : realOperators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)), [location, operatorCategory, showDemoData, realOperators]);
@@ -463,15 +467,30 @@ export default function Home() {
   const acceptRequest = async (id: number) => {
     try {
       const response = await fetch("/api/requests", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action: "accept" }) });
-      const data = await response.json() as { acceptedBy?: string; error?: string; signIn?: string };
+      const data = await response.json() as { acceptedBy?: string; acceptedByUserId?: string; error?: string; signIn?: string };
       if (!response.ok) {
         if (data.signIn) window.location.href = data.signIn;
         throw new Error(data.error ?? "Impossibile prendere in carico la richiesta");
       }
-      setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Presa in carico", acceptedBy: data.acceptedBy ?? "Operatore" } : item));
+      setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Presa in carico", acceptedBy: data.acceptedBy ?? "Operatore", acceptedByUserId: data.acceptedByUserId ?? currentUserId } : item));
       notify("Intervento preso in carico");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Impossibile prendere in carico la richiesta");
+    }
+  };
+
+  const closeRequest = async (id: number) => {
+    try {
+      const response = await fetch("/api/requests", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action: "close" }) });
+      const data = await response.json() as { error?: string; signIn?: string };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile chiudere la lavorazione");
+      }
+      setCommunityRequests((items) => items.map((item) => item.id === id ? { ...item, status: "Chiusa" } : item));
+      notify("Lavorazione chiusa e archiviata");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile chiudere la lavorazione");
     }
   };
 
@@ -659,7 +678,8 @@ export default function Home() {
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
               const isDemo = request.ownerId.startsWith("demo-");
-              return <article key={request.id}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>OK {request.acceptedBy} e disponibile</em>}{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}</article>;
+              const canClose = !isDemo && request.status !== "Chiusa" && (request.ownerId === "me" || request.acceptedByUserId === currentUserId);
+              return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}</div></article>;
             })}
           </div>
         </div>

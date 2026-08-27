@@ -41,3 +41,17 @@ test("keeps real commesse connected to the authenticated workspace", async () =>
   assert.match(page, /Segna completata/);
   assert.doesNotMatch(page, /M\/Y Aurora.*Consegna 18 agosto/);
 });
+
+test("keeps accepted requests assigned and supports a real close lifecycle", async () => {
+  const [page, requestsRoute] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/requests/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(requestsRoute, /accepted_by_user_id AS acceptedByUserId/);
+  assert.match(requestsRoute, /body\.action === "close"/);
+  assert.match(requestsRoute, /owner_user_id = \? OR accepted_by_user_id = \?/);
+  assert.match(page, /request\.acceptedByUserId === currentUserId/);
+  assert.match(page, /action: "close"/);
+  assert.match(page, /Chiudi lavorazione/);
+});

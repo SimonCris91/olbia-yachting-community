@@ -10,6 +10,10 @@
 .community-feed article span{font-size:10px;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 .community-feed article b{font-size:14px}
 .community-feed article p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+.community-feed article.request-closed{opacity:.68;background:#eef3f2}
+.request-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px}
+.request-actions button{border:0;border-radius:9px;padding:8px 10px;background:var(--aqua);color:#fff;font-size:11px;font-weight:800}
+.request-actions button.close-request{background:#e8efed;color:var(--navy)}
 
 .operator-area{display:grid;gap:16px}
 .service-grid button.active{background:#fff;color:var(--navy);border-color:#fff}

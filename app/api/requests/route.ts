@@ -14,11 +14,16 @@ export async function GET(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
   const location = new URL(request.url).searchParams.get("location");
-  const base = "SELECT id, owner_user_id AS ownerId, title, details, category, location, status, accepted_by_user_id AS acceptedBy, created_at AS created FROM service_requests";
+  const base = `SELECT r.id, r.owner_user_id AS ownerId, r.title, r.details, r.category, r.location, r.status,
+    r.accepted_by_user_id AS acceptedByUserId,
+    CASE WHEN r.accepted_by_user_id IS NULL THEN NULL ELSE COALESCE(p.display_name, 'Operatore') END AS acceptedBy,
+    r.created_at AS created
+    FROM service_requests r
+    LEFT JOIN profiles p ON p.user_id = r.accepted_by_user_id`;
   let rows;
-  if (actor.role === "private") rows = await env.DB.prepare(`${base} WHERE owner_user_id = ? ORDER BY id DESC LIMIT 50`).bind(actor.user.userId).all();
-  else if (location && locations.includes(location)) rows = await env.DB.prepare(`${base} WHERE location = ? ORDER BY id DESC LIMIT 50`).bind(location).all();
-  else rows = await env.DB.prepare(`${base} ORDER BY id DESC LIMIT 50`).all();
+  if (actor.role === "private") rows = await env.DB.prepare(`${base} WHERE r.owner_user_id = ? ORDER BY r.id DESC LIMIT 50`).bind(actor.user.userId).all();
+  else if (location && locations.includes(location)) rows = await env.DB.prepare(`${base} WHERE r.location = ? ORDER BY r.id DESC LIMIT 50`).bind(location).all();
+  else rows = await env.DB.prepare(`${base} ORDER BY r.id DESC LIMIT 50`).all();
   return Response.json({ requests: rows.results ?? [], role: actor.role });
 }
 
@@ -35,10 +40,18 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  if (actor.role === "private") return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
   const body = await request.json() as { id?: number; action?: string };
-  if (!Number.isInteger(body.id) || body.action !== "accept") return Response.json({ error: "Azione non valida" }, { status: 400 });
-  const result = await env.DB.prepare("UPDATE service_requests SET status = 'accepted', accepted_by_user_id = ? WHERE id = ? AND status = 'open'").bind(actor.user.userId, body.id).run();
+  const id = Number(body.id);
+  if (!Number.isInteger(id) || !["accept", "close"].includes(body.action ?? "")) return Response.json({ error: "Azione non valida" }, { status: 400 });
+
+  if (body.action === "close") {
+    const result = await env.DB.prepare("UPDATE service_requests SET status = 'closed' WHERE id = ? AND status IN ('open', 'accepted') AND (owner_user_id = ? OR accepted_by_user_id = ?)").bind(id, actor.user.userId, actor.user.userId).run();
+    if (!result.meta.changes) return Response.json({ error: "Puoi chiudere solo una tua richiesta o una lavorazione assegnata a te" }, { status: 403 });
+    return Response.json({ id, status: "closed" });
+  }
+
+  if (actor.role === "private") return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
+  const result = await env.DB.prepare("UPDATE service_requests SET status = 'accepted', accepted_by_user_id = ? WHERE id = ? AND status = 'open'").bind(actor.user.userId, id).run();
   if (!result.meta.changes) return Response.json({ error: "Richiesta non più disponibile" }, { status: 409 });
-  return Response.json({ id: body.id, status: "accepted", acceptedBy: actor.user.displayName });
+  return Response.json({ id, status: "accepted", acceptedBy: actor.user.displayName, acceptedByUserId: actor.user.userId });
 }
