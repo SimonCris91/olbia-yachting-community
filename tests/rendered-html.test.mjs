@@ -55,3 +55,19 @@ test("keeps accepted requests assigned and supports a real close lifecycle", asy
   assert.match(page, /action: "close"/);
   assert.match(page, /Chiudi lavorazione/);
 });
+
+test("supports assisted WhatsApp intake and verified supplier catalog links", async () => {
+  const [page, whatsappRoute] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/whatsapp/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /Importa da WhatsApp/);
+  assert.match(page, /La lettura automatica dei messaggi richiede un account WhatsApp Business Platform/);
+  assert.match(page, /https:\/\/www\.svb-marine\.it\//);
+  assert.match(page, /https:\/\/cataloghi\.motomarine\.it\//);
+  assert.match(page, /https:\/\/www\.marinehardware\.it\//);
+  assert.match(whatsappRoute, /text:\s*\{\s*format:\s*\{/);
+  assert.match(whatsappRoute, /nautical_whatsapp_intake/);
+  assert.doesNotMatch(page, /Link affiliato attivo/);
+});

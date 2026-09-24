@@ -14,6 +14,10 @@
 .request-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px}
 .request-actions button{border:0;border-radius:9px;padding:8px 10px;background:var(--aqua);color:#fff;font-size:11px;font-weight:800}
 .request-actions button.close-request{background:#e8efed;color:var(--navy)}
+.request-actions a{display:inline-flex;align-items:center;border-radius:9px;padding:8px 10px;background:#dcf7e8;color:#11653a;font-size:11px;font-weight:800;text-decoration:none}
+.request-entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.request-entry-actions .publish-job{margin-top:12px}
+.request-entry-actions .whatsapp-import{background:#d9f7e6;color:#115c37}
 
 .operator-area{display:grid;gap:16px}
 .service-grid button.active{background:#fff;color:var(--navy);border-color:#fff}
@@ -41,4 +45,4 @@
 .operator-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
 .operator-actions em{font-style:normal;color:var(--blue);font-size:11px;font-weight:750}
 .operator-actions button{border:0;border-radius:10px;background:var(--navy);color:#fff;padding:9px 11px;font-size:11px;font-weight:750;white-space:nowrap}
-@media(max-width:800px){.operator-panel{padding:14px}.operator-head{display:grid}.operator-head h3{font-size:22px}.operator-head-actions{justify-content:stretch}.operator-head-actions button{flex:1}.operator-list{max-height:none}.operator-actions{align-items:stretch;flex-direction:column}.operator-actions button{width:100%}}
+@media(max-width:800px){.operator-panel{padding:14px}.operator-head{display:grid}.operator-head h3{font-size:22px}.operator-head-actions{justify-content:stretch}.operator-head-actions button{flex:1}.operator-list{max-height:none}.operator-actions{align-items:stretch;flex-direction:column}.operator-actions button{width:100%}.request-entry-actions{grid-template-columns:1fr}}

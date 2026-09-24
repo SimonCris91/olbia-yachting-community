@@ -14,6 +14,8 @@ type CommunityRequest = { id: number; ownerId: string; title: string; details: s
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; telegram?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
+type WhatsAppDraft = { isRelevant: boolean; title: string; category: string; details: string; urgency: string; missing: string[]; replyMessage: string };
+type Supplier = { name: string; category: string; description: string; url: string };
 
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Assistant";
@@ -22,6 +24,22 @@ const normalizeTelegramLink = (value: string) => {
   const cleaned = value.trim().replace(/^@/, "").replace(/^https?:\/\/(?:t\.me|telegram\.me)\//i, "").replace(/^t\.me\//i, "").replace(/^telegram\.me\//i, "").replace(/^\/+/, "");
   return cleaned ? `https://t.me/${cleaned}` : "";
 };
+
+const normalizeWhatsAppPhone = (value: string) => {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.length === 10 && digits.startsWith("3")) digits = `39${digits}`;
+  return digits.length >= 8 ? digits : "";
+};
+
+const suppliers: Supplier[] = [
+  { name: "Osculati", category: "Catalogo generale", description: "Accessori, ricambi, sicurezza e impianti di bordo.", url: "https://www.osculati.com/en/page/catalog" },
+  { name: "SVB", category: "Shop nautico", description: "Attrezzatura, elettronica, manutenzione e ricambi.", url: "https://www.svb-marine.it/" },
+  { name: "TREM", category: "Catalogo 2025/2026", description: "Coperta, impianti, ferramenta, ormeggio e sicurezza.", url: "https://www.trem.net/catalogo" },
+  { name: "Foresti & Suardi", category: "Catalogo ufficiale", description: "Ferramenta, illuminazione e accessori nautici Made in Italy.", url: "https://catalogue.forestiesuardi.it/" },
+  { name: "Motomarine", category: "Cataloghi 2025/2026", description: "Ricambi, eliche e oltre 20.000 articoli nautici.", url: "https://cataloghi.motomarine.it/" },
+  { name: "Marine Hardware", category: "Catalogo Italia", description: "Dotazioni, utensileria, ferramenta e prodotti tecnici.", url: "https://www.marinehardware.it/eCommerceStd/azienda.jsp" },
+];
 
 const locationData: Record<LocationKey, { weather: string; sea: string; services: ServiceCategory[] }> = {
   Olbia: {
@@ -154,6 +172,11 @@ export default function Home() {
   const [showDemoData, setShowDemoData] = useState(false);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "job" | "request" | null>(null);
   const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+  const [whatsAppText, setWhatsAppText] = useState("");
+  const [whatsAppDraft, setWhatsAppDraft] = useState<WhatsAppDraft | null>(null);
+  const [whatsAppLoading, setWhatsAppLoading] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [operatorCategory, setOperatorCategory] = useState<string | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
   const [realOperators, setRealOperators] = useState<Operator[]>([]);
@@ -328,6 +351,50 @@ export default function Home() {
     setSelectedOperator(operator);
     setForm({ title: `Intervento ${operator.category}`, category: operator.category.includes("Elettrica") ? "Elettrica" : operator.category.includes("Elettronica") ? "Elettronica" : operator.category.includes("Refit") || operator.category.includes("Cantieri") ? "Refit" : "Meccanica", details: `${operator.name} - ${location}. Descrivi qui il problema, barca e urgenza.` });
     setFormMode("request");
+  };
+
+  const openWhatsAppImport = () => {
+    setWhatsAppText("");
+    setWhatsAppDraft(null);
+    setWhatsAppOpen(true);
+  };
+
+  const analyzeWhatsApp = async () => {
+    if (whatsAppText.trim().length < 5) return notify("Incolla prima il messaggio ricevuto");
+    setWhatsAppLoading(true);
+    try {
+      const response = await fetch("/api/whatsapp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: whatsAppText.trim(), location }) });
+      const data = await response.json() as { draft?: WhatsAppDraft; error?: string; signIn?: string };
+      if (!response.ok) {
+        if (data.signIn) window.location.href = data.signIn;
+        throw new Error(data.error ?? "Impossibile analizzare il messaggio");
+      }
+      if (!data.draft) throw new Error("Scheda non disponibile");
+      setWhatsAppDraft(data.draft);
+      notify(data.draft.isRelevant ? "Richiesta WhatsApp ordinata" : "Il messaggio non sembra una richiesta nautica");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Impossibile analizzare il messaggio");
+    } finally {
+      setWhatsAppLoading(false);
+    }
+  };
+
+  const useWhatsAppDraft = () => {
+    if (!whatsAppDraft) return;
+    const detailParts = [whatsAppDraft.details, `Urgenza: ${whatsAppDraft.urgency}`, whatsAppDraft.missing.length ? `Dati da confermare: ${whatsAppDraft.missing.join(", ")}` : ""];
+    setForm({ title: whatsAppDraft.title || "Richiesta da WhatsApp", category: whatsAppDraft.category, details: detailParts.filter(Boolean).join("\n") });
+    setWhatsAppOpen(false);
+    setFormMode("request");
+  };
+
+  const copyWhatsAppReply = async () => {
+    if (!whatsAppDraft?.replyMessage) return;
+    try {
+      await navigator.clipboard.writeText(whatsAppDraft.replyMessage);
+      notify("Risposta copiata: ora puoi incollarla su WhatsApp");
+    } catch {
+      notify("Copia non disponibile su questo dispositivo");
+    }
   };
 
   const openOperatorEditor = () => {
@@ -637,7 +704,7 @@ export default function Home() {
           <div className="panel-head"><div><span className="eyebrow">LISTA ACQUISTI</span><h2>Prodotti da riordinare</h2></div><div className="panel-actions"><span className="count">{purchases.filter((item) => !item.done).length}</span><button className="text-button" onClick={() => openForm("purchase")}>+ Aggiungi</button></div></div>
           {!purchases.length && <div className="empty-state"><b>Lista acquisti vuota</b><span>Aggiungi il primo prodotto o chiedi alla chat di cercarlo.</span><button onClick={() => openForm("purchase")}>Aggiungi prodotto</button></div>}
           {purchases.map((item) => <label className={`purchase ${item.done ? "done" : ""}`} key={item.id}><input type="checkbox" checked={item.done} onChange={() => { const done = !item.done; setPurchases((items) => items.map((product) => product.id === item.id ? { ...product, done } : product)); void toggleWorkspaceItem(item.id, done).catch(() => notify("Impossibile aggiornare il prodotto")); }} /><span className="product-img">R</span><span><b>{item.title}</b><small>{item.detail}</small></span><strong>{item.price}</strong></label>)}
-          <button className="buy-button" onClick={() => notify("Confronto prezzi avviato sui portali nautici")}>Confronta prezzi e disponibilita</button>
+          <button className="buy-button" onClick={() => setCatalogOpen(true)}>Apri cataloghi e confronta</button>
         </article>}
       </section>
 
@@ -673,13 +740,14 @@ export default function Home() {
             </button>
           </div>
           {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
-          <button className="publish-job" onClick={() => openForm("request")}>+ Pubblica una richiesta</button>
+          <div className="request-entry-actions"><button className="publish-job" onClick={() => openForm("request")}>+ Pubblica una richiesta</button><button className="publish-job whatsapp-import" onClick={openWhatsAppImport}>Importa da WhatsApp</button></div>
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
               const isDemo = request.ownerId.startsWith("demo-");
               const canClose = !isDemo && request.status !== "Chiusa" && (request.ownerId === "me" || request.acceptedByUserId === currentUserId);
-              return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}</div></article>;
+              const shareText = `Olbia Yachting Community Request\n${request.title}\n${request.details}\nZona: ${request.location}\nCategoria: ${request.category}`;
+              return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}{!isDemo && <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">Condividi su WhatsApp</a>}</div></article>;
             })}
           </div>
         </div>
@@ -692,14 +760,14 @@ export default function Home() {
             {webResult && <div className="web-result"><RichText text={webResult.reply} />{webResult.sources?.length ? <div className="source-list"><span>Fonti web</span>{webResult.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{index + 1}. {source.title}</a>)}</div> : null}</div>}
             <div className="operator-list">
               {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno gli operatori reali che pubblicano un profilo per questa zona."}</div>}
-              {visibleOperators.map((operator) => <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
+              {visibleOperators.map((operator) => { const whatsAppPhone = operator.phone ? normalizeWhatsAppPhone(operator.phone) : ""; const contactMessage = `Buongiorno ${operator.name}, invio una richiesta tramite Olbia Yachting Community. Zona: ${location}. Vorrei informazioni per un intervento ${operator.category}.`; return <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
                 <div className="operator-title"><b>{operator.name}</b>{showDemoData && <span>Demo</span>}{!showDemoData && operator.verified && <span>Verificato</span>}{operator.premium && <span>Premium</span>}</div>
                 <p>{operator.note}</p>
                 <div className="operator-meta"><span>{operator.category}</span>{operator.distance && <span>{operator.distance}</span>}{operator.rating && <span>{operator.rating}/5</span>}</div>
                 <div className="operator-tags">{operator.tags.map((tag) => <small key={tag}>{tag}</small>)}</div>
-                {!showDemoData && <div className="operator-contact">{operator.phone && <a href={`tel:${operator.phone}`}>{operator.phone}</a>}{operator.email && <a href={`mailto:${operator.email}`}>{operator.email}</a>}{operator.telegram && normalizeTelegramLink(operator.telegram) && <a href={normalizeTelegramLink(operator.telegram)} target="_blank" rel="noreferrer">Telegram</a>}{operator.website && <a href={operator.website.startsWith("http") ? operator.website : `https://${operator.website}`} target="_blank" rel="noreferrer">Sito</a>}</div>}
+                {!showDemoData && <div className="operator-contact">{operator.phone && <a href={`tel:${operator.phone}`}>{operator.phone}</a>}{whatsAppPhone && <a href={`https://wa.me/${whatsAppPhone}?text=${encodeURIComponent(contactMessage)}`} target="_blank" rel="noreferrer">WhatsApp</a>}{operator.email && <a href={`mailto:${operator.email}?subject=${encodeURIComponent("Olbia Yachting Community Request")}&body=${encodeURIComponent(contactMessage)}`}>Email richiesta</a>}{operator.telegram && normalizeTelegramLink(operator.telegram) && <a href={normalizeTelegramLink(operator.telegram)} target="_blank" rel="noreferrer">Telegram</a>}{operator.website && <a href={operator.website.startsWith("http") ? operator.website : `https://${operator.website}`} target="_blank" rel="noreferrer">Sito</a>}</div>}
                 <div className="operator-actions"><em>{operator.response ?? (showDemoData ? "Disponibilita demo" : "Profilo reale pubblicato")}</em><button onClick={(event) => { event.stopPropagation(); requestOperator(operator); }}>Richiedi intervento</button></div>
-              </article>)}
+              </article>; })}
             </div>
           </div>
         </div>
@@ -715,6 +783,7 @@ export default function Home() {
         <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
         <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Yachting-Assistant-Android.apk" download>Scarica l'app Android</a><a className="profile-signout" href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a><small className="plan-note">Se condividi il link, ogni persona deve accedere col proprio account per vedere il proprio spazio e non quello di chi ha gia aperto l'app su quel dispositivo.</small></div>
         <div className={`plan-card telegram-card ${telegramHandle ? "selected" : ""}`}><div className="telegram-copy"><span>TELEGRAM</span><h3>Contatto diretto</h3><p>Salva il tuo username, canale o link Telegram. Lo ritrovi nel profilo e nei contatti rapidi degli operatori.</p></div><div className="telegram-form"><label><span>Username o link Telegram</span><input value={telegramHandle} onChange={(event) => setTelegramHandle(event.target.value)} placeholder="@nomeutente o https://t.me/..." /></label><button type="button" onClick={() => void saveTelegramProfile()}>Salva Telegram</button>{normalizeTelegramLink(telegramHandle) && <a className="telegram-link" href={normalizeTelegramLink(telegramHandle)} target="_blank" rel="noreferrer">Apri Telegram</a>}</div><small className="plan-note">Svuota il campo e salva di nuovo per rimuoverlo. Per automazioni vere serve un bot token; qui hai il collegamento operativo persistente, gratuito e pronto all'uso.</small></div>
+        <div className="plan-card integration-card"><span>WHATSAPP BUSINESS</span><h3>Gestione richieste</h3><p>Importa i messaggi ricevuti e trasformali in schede ordinate prima di pubblicarli.</p><ul><li>Importazione manuale con AI: attiva</li><li>Risposte e richieste precompilate: attive</li><li>Inbox automatica Meta: da collegare</li></ul><button type="button" onClick={openWhatsAppImport}>Importa una richiesta</button><small className="plan-note">La lettura automatica dei messaggi richiede un account WhatsApp Business Platform, numero abilitato, webhook e credenziali Meta. L'app non legge le chat personali.</small></div>
       </section>
 
       <nav className="bottom-nav" aria-label="Navigazione principale">
@@ -724,6 +793,10 @@ export default function Home() {
       <button className="chat-fab" onClick={() => setChat(!chat)} aria-label={`Apri l'assistente ${BRAND_NAME}`}><span className="assistant-symbol" aria-hidden="true"><i /><i /><i /></span></button>
       {chat && <aside className="chat chat-live"><button onClick={() => setChat(false)}>x</button><span>{BRAND_NAME.toUpperCase()} - ONLINE</span><h3>{ASSISTANT_NAME}</h3><div ref={messageListRef} className="message-list">{messages.map((message) => <div key={message.id} className={`message ${message.role}`}>{message.image && <img className="message-image" src={message.image} alt="Foto caricata" />}<RichText text={message.text} />{message.role === "assistant" && message.id !== 1 && <button className="message-action" onClick={() => addMessageToAgenda(message)}>+ Aggiungi in agenda</button>}{message.sources?.length ? <div className="source-list"><span>Fonti consultate</span>{message.sources.map((source, i) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{i + 1}. {source.title}</a>)}</div> : null}</div>)}{chatLoading && <div className="message assistant"><span className="thinking-dot" /> {chatStatus || "Sto lavorando..."}</div>}</div><div className="suggestions"><button disabled={chatLoading} onClick={() => sendChat("Devo trovare una girante")}>Trova una girante</button><button disabled={chatLoading} onClick={() => sendChat(`Cerco un elettricista nautico a ${location}`)}>Elettricista in zona</button><button disabled={chatLoading} onClick={() => fileRef.current?.click()}>+ Allega foto</button></div><form className="chat-input" onSubmit={(event) => { event.preventDefault(); sendChat(); }}><input disabled={chatLoading} value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Scrivi un messaggio..." aria-label="Messaggio" /><button disabled={chatLoading} type="submit">^</button></form><small className="ai-note">Verifica sempre le indicazioni tecniche critiche con un professionista qualificato.</small></aside>}
       {toast && <div className="toast">OK {toast}</div>}
+
+      {catalogOpen && <div className="modal-backdrop" onClick={() => setCatalogOpen(false)}><section className="yard-modal catalog-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setCatalogOpen(false)}>x</button><span className="eyebrow">CATALOGHI NAUTICI UFFICIALI</span><h2>Trova il ricambio alla fonte.</h2><p className="catalog-intro">Apri i siti ufficiali per verificare codici, schede tecniche, prezzi e disponibilita. Nessun link affiliato e attivo finche non esiste un accordo formale.</p><div className="catalog-grid">{suppliers.map((supplier) => <a key={supplier.name} href={supplier.url} target="_blank" rel="noreferrer"><span>{supplier.category}</span><b>{supplier.name}</b><small>{supplier.description}</small><em>Apri catalogo -&gt;</em></a>)}</div><button className="catalog-ai" onClick={() => { const products = purchases.filter((item) => !item.done).map((item) => item.title).join(", ") || "il prodotto che mi serve"; setChatText(`Confronta sui siti ufficiali dei fornitori nautici questo elenco: ${products}. Riporta fonti e non inventare prezzi o disponibilita.`); setChat(true); setCatalogOpen(false); }}>Chiedi il confronto all'assistente</button></section></div>}
+
+      {whatsAppOpen && <div className="modal-backdrop" onClick={() => setWhatsAppOpen(false)}><section className="entry-modal whatsapp-modal" onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setWhatsAppOpen(false)}>x</button><span className="eyebrow">IMPORTA DA WHATSAPP</span><h2>Da messaggio a lavorazione.</h2><p className="whatsapp-intro">Incolla il testo ricevuto. L'AI prepara una scheda, ma sarai tu a controllarla e pubblicarla. Il testo viene analizzato dall'AI e non viene salvato nel database finche non confermi la richiesta.</p><label><span>Messaggio del cliente</span><textarea autoFocus value={whatsAppText} onChange={(event) => { setWhatsAppText(event.target.value); setWhatsAppDraft(null); }} placeholder="Es. Ciao, sono al porto di Olbia con un problema al salpa ancora..." /></label><button className="entry-submit" type="button" disabled={whatsAppLoading} onClick={() => void analyzeWhatsApp()}>{whatsAppLoading ? "Analisi in corso..." : "Analizza e ordina"}</button>{whatsAppDraft && <div className={`whatsapp-draft ${whatsAppDraft.isRelevant ? "" : "not-relevant"}`}><span>{whatsAppDraft.category} - Urgenza {whatsAppDraft.urgency}</span><b>{whatsAppDraft.title}</b><p>{whatsAppDraft.details}</p>{whatsAppDraft.missing.length > 0 && <div><strong>Dati da chiedere</strong><ul>{whatsAppDraft.missing.map((item) => <li key={item}>{item}</li>)}</ul></div>}<label><span>Risposta pronta per il cliente</span><textarea readOnly value={whatsAppDraft.replyMessage} /></label><div className="whatsapp-draft-actions"><button type="button" onClick={() => void copyWhatsAppReply()}>Copia risposta</button><button type="button" disabled={!whatsAppDraft.isRelevant} onClick={useWhatsAppDraft}>Rivedi e pubblica</button></div></div>}</section></div>}
 
       {yardOpen && <div className="modal-backdrop" onClick={() => setYardOpen(false)}><section className="yard-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setYardOpen(false)}>x</button><span className="eyebrow">{BRAND_NAME.toUpperCase()} CANTIERI</span><h2>Commesse</h2><small className="plan-note">Archivio reale e personale: ogni modifica viene salvata sul tuo account.</small>{!jobs.length && <div className="job-empty"><b>Nessuna commessa</b><small>Crea la prima commessa indicando imbarcazione, lavorazione e scadenza.</small></div>}{jobs.map((job) => <div className={`job ${job.done ? "completed" : ""}`} key={job.id}><div><b>{job.title}</b><small>{job.details}</small></div><strong>{job.done ? "Completata" : "In corso"}</strong><i><em style={{ width: job.done ? "100%" : "25%" }} /></i><button className="job-toggle" onClick={() => { const done = !job.done; setJobs((items) => items.map((item) => item.id === job.id ? { ...item, done } : item)); void toggleWorkspaceItem(job.id, done).then(() => notify(done ? "Commessa completata" : "Commessa riaperta")).catch(() => notify("Impossibile aggiornare la commessa")); }}>{job.done ? "Riapri" : "Segna completata"}</button></div>)}<div className="job-stats"><span><b>{jobs.filter((job) => !job.done).length}</b><small>Commesse aperte</small></span><span><b>{jobs.filter((job) => job.done).length}</b><small>Commesse completate</small></span><span><b>{purchases.filter((item) => !item.done).length}</b><small>Ordini in attesa</small></span></div><button className="new-job" onClick={() => { setYardOpen(false); openForm("job"); }}>+ Nuova commessa</button></section></div>}
 
