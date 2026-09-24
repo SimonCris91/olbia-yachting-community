@@ -1,16 +1,15 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { isSiteOwner, type ProfileRole } from "../../access";
 
 const locations = ["Olbia", "Porto Cervo", "Porto Rotondo", "Cagliari", "Alghero"] as const;
 const roles = ["operator", "company"] as const;
 
-type ActorRole = "private" | "operator" | "company";
-
 async function identity() {
   const user = await getChatGPTUser();
   if (!user) return null;
-  const profile = await env.DB.prepare("SELECT role FROM profiles WHERE user_id = ?").bind(user.userId).first<{ role: ActorRole }>();
-  return { user, role: profile?.role ?? "private" };
+  const profile = await env.DB.prepare("SELECT role FROM profiles WHERE user_id = ?").bind(user.userId).first<{ role: ProfileRole }>();
+  return { user, role: profile?.role ?? "private", isOwner: isSiteOwner(user) };
 }
 
 function parseJsonArray(value: string | null | undefined) {
@@ -118,7 +117,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  if (!roles.includes(actor.role as (typeof roles)[number])) {
+  if (!actor.isOwner && !roles.includes(actor.role as (typeof roles)[number])) {
     return Response.json({ error: "Solo operatori e ditte possono pubblicare un profilo operatore" }, { status: 403 });
   }
 
@@ -216,7 +215,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const actor = await identity();
   if (!actor) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  if (!roles.includes(actor.role as (typeof roles)[number])) {
+  if (!actor.isOwner && !roles.includes(actor.role as (typeof roles)[number])) {
     return Response.json({ error: "Solo operatori e ditte possono modificare un profilo operatore" }, { status: 403 });
   }
 

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type Tab = "home" | "agenda" | "scan" | "community" | "profile";
 type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
 type AccountType = "private" | "operator" | "company" | "owner";
+type ProfileRole = Exclude<AccountType, "owner">;
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
 type Purchase = { id: number; title: string; detail: string; price: string; done: boolean };
 type Job = { id: number; title: string; details: string; done: boolean };
@@ -19,6 +20,13 @@ type Supplier = { name: string; category: string; description: string; url: stri
 
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Assistant";
+const accessLabels: Record<AccountType, string> = { private: "Privato", operator: "Operatore", company: "Ditta associata", owner: "Titolare" };
+const accessOptions: Array<{ id: AccountType; title: string; description: string; features: string }> = [
+  { id: "private", title: "Privato", description: "Per armatori e proprietari", features: "Richieste, agenda, acquisti e assistente AI" },
+  { id: "operator", title: "Operatore", description: "Per tecnici e professionisti", features: "Lavorazioni compatibili, agenda e profilo servizi" },
+  { id: "company", title: "Ditta associata", description: "Per aziende e cantieri", features: "Lavorazioni, ordini, commesse e squadra" },
+  { id: "owner", title: "Titolare", description: "Amministrazione della piattaforma", features: "Tutte le aree e viste separate" },
+];
 
 const normalizeTelegramLink = (value: string) => {
   const cleaned = value.trim().replace(/^@/, "").replace(/^https?:\/\/(?:t\.me|telegram\.me)\//i, "").replace(/^t\.me\//i, "").replace(/^telegram\.me\//i, "").replace(/^\/+/, "");
@@ -155,7 +163,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [chat, setChat] = useState(false);
   const [plan, setPlan] = useState<"Standard" | "Premium">("Standard");
-  const [accountType, setAccountType] = useState<AccountType>("owner");
+  const [accountType, setAccountType] = useState<AccountType>("private");
+  const [isOwner, setIsOwner] = useState(false);
+  const [accessPickerOpen, setAccessPickerOpen] = useState(false);
   const [location, setLocation] = useState<LocationKey>("Olbia");
   const [yardOpen, setYardOpen] = useState(false);
   const [chatText, setChatText] = useState("");
@@ -192,18 +202,15 @@ export default function Home() {
     const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
     const savedLanguage = localStorage.getItem("yachting-assistant-language") as Language | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
-    const savedAccountType = localStorage.getItem("marinaio-account-type") as AccountType | null;
     const savedDemoMode = localStorage.getItem("barcaora-demo-mode");
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedLanguage && ["it", "en", "fr", "es", "de"].includes(savedLanguage)) setLanguage(savedLanguage);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
-    if (savedAccountType === "private" || savedAccountType === "operator" || savedAccountType === "company" || savedAccountType === "owner") setAccountType(savedAccountType);
     if (savedDemoMode === "true") setShowDemoData(true);
   }, []);
 
   useEffect(() => { localStorage.setItem("yachting-assistant-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
-  useEffect(() => { localStorage.setItem("marinaio-account-type", accountType); }, [accountType]);
   useEffect(() => { localStorage.setItem("yachting-assistant-language", language); document.documentElement.lang = language; }, [language]);
   useEffect(() => { localStorage.setItem("barcaora-demo-mode", showDemoData ? "true" : "false"); }, [showDemoData]);
 
@@ -212,13 +219,20 @@ export default function Home() {
       try {
         const profileResponse = await fetch("/api/profile");
         if (!profileResponse.ok) return;
-        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: AccountType } };
+        const profileData = await profileResponse.json() as { profile?: { userId?: string; displayName?: string; telegram?: string; role?: ProfileRole; isOwner?: boolean } };
         const profileUserId = profileData.profile?.userId ?? "";
+        const profileRole = profileData.profile?.role ?? "private";
+        const ownerAccess = !!profileData.profile?.isOwner;
+        const sessionKey = `oyc-access-${profileUserId}`;
+        const savedAccess = sessionStorage.getItem(sessionKey) as AccountType | null;
+        const validSavedAccess = savedAccess && accessOptions.some((option) => option.id === savedAccess) && (savedAccess !== "owner" || ownerAccess) ? savedAccess : null;
         setSignedIn(true);
         setCurrentUserId(profileUserId);
         setProfileName(profileData.profile?.displayName ?? "Utente");
         setTelegramHandle(profileData.profile?.telegram ?? "");
-        if (profileData.profile?.role) setAccountType(profileData.profile.role);
+        setIsOwner(ownerAccess);
+        setAccountType(ownerAccess ? validSavedAccess ?? "owner" : profileRole);
+        setAccessPickerOpen(!validSavedAccess);
         const workspaceResponse = await fetch("/api/workspace");
         if (workspaceResponse.ok) {
           const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase" | "job"; title: string; details: string; done: boolean }> };
@@ -562,13 +576,20 @@ export default function Home() {
   };
 
   const changeAccountType = async (nextRole: AccountType) => {
-    if (nextRole === "owner") {
-      setAccountType("owner");
-      notify("Vista titolare attivata su questo dispositivo");
+    const sessionKey = `oyc-access-${currentUserId}`;
+    if (nextRole === "owner" && !isOwner) {
+      notify("La vista titolare e riservata al proprietario della piattaforma");
+      return;
+    }
+    if (isOwner || nextRole === accountType) {
+      setAccountType(nextRole);
+      sessionStorage.setItem(sessionKey, nextRole);
+      setAccessPickerOpen(false);
+      notify(`Vista ${accessLabels[nextRole]} attivata`);
       return;
     }
     try {
-      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: nextRole }) });
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: nextRole as ProfileRole }) });
       const data = await response.json() as { error?: string; signIn?: string };
       if (!response.ok) {
         if (data.signIn) window.location.href = data.signIn;
@@ -576,7 +597,9 @@ export default function Home() {
       }
       setAccountType(nextRole);
       setSignedIn(true);
-      notify("Ruolo aggiornato");
+      sessionStorage.setItem(sessionKey, nextRole);
+      setAccessPickerOpen(false);
+      window.location.reload();
     } catch (error) {
       notify(error instanceof Error ? error.message : "Impossibile aggiornare il ruolo");
     }
@@ -630,6 +653,7 @@ export default function Home() {
 
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
   if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
+  if (accessPickerOpen) return <main className="auth-screen access-screen"><section className="auth-card access-choice-card"><img src="/yachting-community-logo.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Come vuoi accedere?</h1><p>Scegli lo spazio adatto alla tua attivita. Potrai cambiarlo in seguito dal pulsante Accesso.</p><div className="access-choice-grid">{accessOptions.filter((option) => option.id !== "owner" || isOwner).map((option) => <button key={option.id} type="button" onClick={() => void changeAccountType(option.id)}><b>{option.title}</b><span>{option.description}</span><small>{option.features}</small></button>)}</div><a href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a></section></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
@@ -645,6 +669,7 @@ export default function Home() {
             </select>
           </div>
           <button className={`plan-badge ${plan.toLowerCase()}`} onClick={() => goTo("profile")}>{plan}</button>
+          <button className="access-badge" type="button" onClick={() => setAccessPickerOpen(true)}>Accesso: {accessLabels[accountType]}</button>
           <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
           <button className="telegram-switch" type="button" onClick={openTelegramLink}>Telegram</button>
           <a className="account-switch" href="/signout-with-chatgpt?return_to=%2F">Cambia account</a>
@@ -656,7 +681,8 @@ export default function Home() {
         <button className={tab === "home" ? "active" : ""} onClick={() => goTo("home")}>Home</button>
         <button className={tab === "agenda" ? "active" : ""} onClick={() => goTo("agenda")}>Agenda</button>
         <button className={tab === "scan" ? "active" : ""} onClick={() => goTo("scan")}>Scansiona</button>
-        <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>Interventi</button>
+        <button className={tab === "community" ? "active" : ""} onClick={() => goTo("community")}>{accountType === "private" ? "Richieste" : "Lavorazioni"}</button>
+        {(accountType === "company" || accountType === "owner") && <button onClick={() => setYardOpen(true)}>Commesse</button>}
         <button className={tab === "profile" ? "active" : ""} onClick={() => goTo("profile")}>Profilo e piani</button>
       </nav>
 
@@ -728,7 +754,7 @@ export default function Home() {
             <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
             <button className={accountType === "operator" ? "active" : ""} onClick={() => void changeAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
             <button className={accountType === "company" ? "active" : ""} onClick={() => void changeAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
-            <button className={accountType === "owner" ? "active" : ""} onClick={() => void changeAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>
+            {isOwner && <button className={accountType === "owner" ? "active" : ""} onClick={() => void changeAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>}
           </div>
           <div className="reality-card">
             <div>
@@ -756,7 +782,7 @@ export default function Home() {
           <div className="operator-panel">
             <div className="operator-head"><div><span className="eyebrow light">OPERATORI DISPONIBILI</span><h3>{operatorCategory ?? `Tutti a ${location}`}</h3></div><div className="operator-head-actions">{operatorCategory && <button onClick={() => { setOperatorCategory(null); setWebResult(null); }}>Tutti</button>}<button onClick={verifyOperatorsOnWeb} disabled={webLoading}>{webLoading ? "Verifico..." : "Verifica sul web"}</button></div></div>
             <p className="operator-note">{showDemoData ? "Elenco locale in modalita demo: usa Verifica sul web per controllare aziende reali e fonti." : visibleOperators.length ? "Archivio operatori reale collegato al database. I dati mostrati qui arrivano dai profili pubblicati dagli operatori." : "Nessun operatore reale pubblicato in questa zona. Un operatore o una ditta puo creare adesso il proprio profilo."}</p>
-            {(accountType === "operator" || accountType === "company") && <button className="publish-job secondary-job" onClick={openOperatorEditor}>{myOperatorProfile ? "Aggiorna profilo operatore" : "Pubblica profilo operatore"}</button>}
+            {(accountType === "operator" || accountType === "company" || accountType === "owner") && <button className="publish-job secondary-job" onClick={openOperatorEditor}>{myOperatorProfile ? "Aggiorna profilo operatore" : "Pubblica profilo operatore"}</button>}
             {webResult && <div className="web-result"><RichText text={webResult.reply} />{webResult.sources?.length ? <div className="source-list"><span>Fonti web</span>{webResult.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{index + 1}. {source.title}</a>)}</div> : null}</div>}
             <div className="operator-list">
               {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno gli operatori reali che pubblicano un profilo per questa zona."}</div>}
@@ -780,6 +806,7 @@ export default function Home() {
 
       <section className="plans" data-section="profile" id="plans">
         <div className="plans-intro"><span className="eyebrow">PIANI {BRAND_NAME.toUpperCase()}</span><h2>Scegli quanto supporto vuoi a bordo.</h2><p>Le funzioni quotidiane restano accessibili a tutti. Premium aggiunge intelligenza, collaborazione e priorita.</p></div>
+        <div className="plan-card access-plan-card"><div><span>ACCESSO {accessLabels[accountType].toUpperCase()}</span><h3>Il tuo spazio operativo</h3><p>Sezioni dedicate al ruolo, dati separati per account e permessi verificati sul server.</p></div><div><strong>{accessLabels[accountType]}</strong><small>{isOwner ? "Puoi passare tra tutte le viste." : "Puoi modificare il tuo ruolo in qualsiasi momento."}</small><button onClick={() => setAccessPickerOpen(true)}>Cambia tipo di accesso</button></div></div>
         <div className={`plan-card ${plan === "Standard" ? "selected" : ""}`}><span>STANDARD</span><h3>Per iniziare</h3><strong>Gratis</strong><ul><li>Agenda e lista acquisti</li><li>3 identificazioni AI al mese</li><li>Ricerca servizi nella zona scelta</li><li>1 imbarcazione</li></ul><button onClick={() => { setPlan("Standard"); notify("Piano Standard selezionato"); }}>{plan === "Standard" ? "Piano attuale" : "Scegli Standard"}</button></div>
         <div className={`plan-card premium-card ${plan === "Premium" ? "selected" : ""}`}><span>PREMIUM</span><h3>Per chi vive il mare</h3><strong>EUR 14,90 <small>/ mese</small></strong><ul><li>Identificazioni AI illimitate</li><li>Confronto prezzi avanzato</li><li>Piu imbarcazioni e collaboratori</li><li>Assistenza e richieste prioritarie</li><li>Storico manutenzioni completo</li></ul><button onClick={() => { setPlan("Premium"); notify("Premium selezionato in anteprima: pagamento reale non ancora attivo"); }}>{plan === "Premium" ? "Premium attivo" : "Prova Premium"}</button><small className="plan-note">Attualmente e una anteprima funzionale: il pagamento reale non e ancora collegato.</small><a className="profile-download" href="/downloads/Yachting-Assistant-Android.apk" download>Scarica l'app Android</a><a className="profile-signout" href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a><small className="plan-note">Se condividi il link, ogni persona deve accedere col proprio account per vedere il proprio spazio e non quello di chi ha gia aperto l'app su quel dispositivo.</small></div>
         <div className={`plan-card telegram-card ${telegramHandle ? "selected" : ""}`}><div className="telegram-copy"><span>TELEGRAM</span><h3>Contatto diretto</h3><p>Salva il tuo username, canale o link Telegram. Lo ritrovi nel profilo e nei contatti rapidi degli operatori.</p></div><div className="telegram-form"><label><span>Username o link Telegram</span><input value={telegramHandle} onChange={(event) => setTelegramHandle(event.target.value)} placeholder="@nomeutente o https://t.me/..." /></label><button type="button" onClick={() => void saveTelegramProfile()}>Salva Telegram</button>{normalizeTelegramLink(telegramHandle) && <a className="telegram-link" href={normalizeTelegramLink(telegramHandle)} target="_blank" rel="noreferrer">Apri Telegram</a>}</div><small className="plan-note">Svuota il campo e salva di nuovo per rimuoverlo. Per automazioni vere serve un bot token; qui hai il collegamento operativo persistente, gratuito e pronto all'uso.</small></div>

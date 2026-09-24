@@ -18,6 +18,25 @@
 .auth-card p { color: var(--muted); line-height: 1.55; }
 .auth-card button { width: 100%; border: 0; border-radius: 13px; margin: 14px 0; padding: 14px; background: var(--navy); color: #fff; font-weight: 800; }
 .auth-card small { display: block; color: var(--muted); line-height: 1.45; }
+.access-screen { padding: 32px 20px; }
+.access-choice-card { width: min(100%, 860px); padding: 28px 34px 32px; }
+.access-choice-card > img { width: 112px; margin-bottom: 14px; }
+.access-choice-card > p { max-width: 620px; margin: 0 auto 20px; }
+.access-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; text-align: left; }
+.auth-card .access-choice-grid button { min-height: 140px; margin: 0; padding: 20px; border: 1px solid var(--line); background: #fff; color: var(--ink); display: flex; flex-direction: column; align-items: flex-start; gap: 7px; box-shadow: 0 9px 22px rgba(3,19,39,.06); }
+.auth-card .access-choice-grid button:hover { border-color: var(--gold); transform: translateY(-2px); }
+.access-choice-grid b { color: var(--navy); font: 500 23px Georgia, serif; }
+.access-choice-grid span { color: #087087; font-size: 12px; font-weight: 800; }
+.access-choice-grid small { color: var(--muted); font-size: 11px; }
+.access-choice-card > a { display: inline-block; margin-top: 20px; color: var(--blue); font-size: 12px; font-weight: 800; }
+.access-badge { border: 1px solid rgba(217,182,91,.65); border-radius: 999px; background: #fff8e7; color: #735509; padding: 9px 12px; font-size: 10px; font-weight: 850; white-space: nowrap; }
+.access-plan-card { grid-column: 1/-1; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; background: linear-gradient(135deg, #fff8e7, #fff); }
+.access-plan-card h3 { margin-bottom: 7px; }
+.access-plan-card p { margin: 0; color: var(--muted); line-height: 1.55; }
+.access-plan-card > div:last-child { min-width: 220px; display: grid; gap: 9px; }
+.access-plan-card > div:last-child strong { color: var(--navy); font-size: 20px; }
+.access-plan-card > div:last-child small { color: var(--muted); line-height: 1.4; }
+.access-plan-card > div:last-child button { background: var(--navy); color: #fff; }
 
 .brand-logo { width: 46px; height: 46px; object-fit: cover; }
 .brand > span:last-child { display: flex; flex-direction: column; line-height: 1.05; }
@@ -46,6 +65,7 @@
   .brand > span:last-child::after { content: "OLBIA"; font-size: 13px; letter-spacing: .08em; }
   .top-actions { gap: 6px; flex: 0 0 auto; }
   .top-actions .plan-badge, .top-actions .avatar { display: none; }
+  .access-badge { max-width: 112px; overflow: hidden; text-overflow: ellipsis; padding: 8px 9px; }
   .location-wrap { min-width: 0; max-width: 112px; }
   .location-select { font-size: 11px; }
   .access-areas > div { grid-template-columns: 1fr 1fr; }
@@ -65,6 +85,11 @@
   .purchase strong { font-size: 11px; }
   .community-access { grid-template-columns: 1fr 1fr; }
   .community-access button { width: 100%; margin-top: 0; }
+  .access-choice-card { padding: 22px 18px 26px; }
+  .access-choice-grid { grid-template-columns: 1fr; }
+  .auth-card .access-choice-grid button { min-height: 118px; padding: 16px; }
+  .access-plan-card { grid-template-columns: 1fr; }
+  .access-plan-card > div:last-child { min-width: 0; }
   .operator-head { align-items: flex-start; gap: 12px; }
   .operator-head-actions { flex-wrap: wrap; justify-content: flex-end; }
   .source-list a { overflow-wrap: anywhere; }

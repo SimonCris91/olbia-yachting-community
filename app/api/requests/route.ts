@@ -1,13 +1,14 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { isSiteOwner, type ProfileRole } from "../../access";
 
 const locations = ["Olbia", "Porto Cervo", "Porto Rotondo", "Cagliari", "Alghero"];
 
 async function identity() {
   const user = await getChatGPTUser();
   if (!user) return null;
-  const profile = await env.DB.prepare("SELECT role FROM profiles WHERE user_id = ?").bind(user.userId).first<{ role: "private" | "operator" | "company" }>();
-  return { user, role: profile?.role ?? "private" };
+  const profile = await env.DB.prepare("SELECT role FROM profiles WHERE user_id = ?").bind(user.userId).first<{ role: ProfileRole }>();
+  return { user, role: profile?.role ?? "private", isOwner: isSiteOwner(user) };
 }
 
 export async function GET(request: Request) {
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     FROM service_requests r
     LEFT JOIN profiles p ON p.user_id = r.accepted_by_user_id`;
   let rows;
-  if (actor.role === "private") rows = await env.DB.prepare(`${base} WHERE r.owner_user_id = ? ORDER BY r.id DESC LIMIT 50`).bind(actor.user.userId).all();
+  if (actor.role === "private" && !actor.isOwner) rows = await env.DB.prepare(`${base} WHERE r.owner_user_id = ? ORDER BY r.id DESC LIMIT 50`).bind(actor.user.userId).all();
   else if (location && locations.includes(location)) rows = await env.DB.prepare(`${base} WHERE r.location = ? ORDER BY r.id DESC LIMIT 50`).bind(location).all();
   else rows = await env.DB.prepare(`${base} ORDER BY r.id DESC LIMIT 50`).all();
   return Response.json({ requests: rows.results ?? [], role: actor.role });
@@ -45,12 +46,14 @@ export async function PATCH(request: Request) {
   if (!Number.isInteger(id) || !["accept", "close"].includes(body.action ?? "")) return Response.json({ error: "Azione non valida" }, { status: 400 });
 
   if (body.action === "close") {
-    const result = await env.DB.prepare("UPDATE service_requests SET status = 'closed' WHERE id = ? AND status IN ('open', 'accepted') AND (owner_user_id = ? OR accepted_by_user_id = ?)").bind(id, actor.user.userId, actor.user.userId).run();
+    const result = actor.isOwner
+      ? await env.DB.prepare("UPDATE service_requests SET status = 'closed' WHERE id = ? AND status IN ('open', 'accepted')").bind(id).run()
+      : await env.DB.prepare("UPDATE service_requests SET status = 'closed' WHERE id = ? AND status IN ('open', 'accepted') AND (owner_user_id = ? OR accepted_by_user_id = ?)").bind(id, actor.user.userId, actor.user.userId).run();
     if (!result.meta.changes) return Response.json({ error: "Puoi chiudere solo una tua richiesta o una lavorazione assegnata a te" }, { status: 403 });
     return Response.json({ id, status: "closed" });
   }
 
-  if (actor.role === "private") return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
+  if (actor.role === "private" && !actor.isOwner) return Response.json({ error: "Solo operatori e ditte possono prendere in carico lavori" }, { status: 403 });
   const result = await env.DB.prepare("UPDATE service_requests SET status = 'accepted', accepted_by_user_id = ? WHERE id = ? AND status = 'open'").bind(actor.user.userId, id).run();
   if (!result.meta.changes) return Response.json({ error: "Richiesta non più disponibile" }, { status: 409 });
   return Response.json({ id, status: "accepted", acceptedBy: actor.user.displayName, acceptedByUserId: actor.user.userId });

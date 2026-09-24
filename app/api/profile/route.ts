@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { isSiteOwner, type ProfileRole } from "../../access";
 
 const roles = ["private", "operator", "company"] as const;
-type Role = (typeof roles)[number];
 
 async function currentProfile() {
   const user = await getChatGPTUser();
@@ -21,13 +21,13 @@ async function currentProfile() {
 export async function GET() {
   const { user, profile } = await currentProfile();
   if (!user) return Response.json({ error: "Accedi per salvare e gestire i tuoi dati", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  return Response.json({ profile });
+  return Response.json({ profile: profile ? { ...profile, isOwner: isSiteOwner(user) } : null });
 }
 
 export async function PATCH(request: Request) {
   const { user } = await currentProfile();
   if (!user) return Response.json({ error: "Accesso richiesto", signIn: "/signin-with-chatgpt?return_to=/" }, { status: 401 });
-  const payload = await request.json() as { role?: Role; telegram?: string | null };
+  const payload = await request.json() as { role?: ProfileRole; telegram?: string | null };
   if (payload.role && !roles.includes(payload.role)) return Response.json({ error: "Ruolo non valido" }, { status: 400 });
   if (payload.role) await env.DB.prepare("UPDATE profiles SET role = ? WHERE user_id = ?").bind(payload.role, user.userId).run();
   if (payload.telegram !== undefined) {

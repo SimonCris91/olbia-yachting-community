@@ -71,3 +71,22 @@ test("supports assisted WhatsApp intake and verified supplier catalog links", as
   assert.match(whatsappRoute, /nautical_whatsapp_intake/);
   assert.doesNotMatch(page, /Link affiliato attivo/);
 });
+
+test("selects role-specific app areas at sign-in and protects owner access", async () => {
+  const [page, profileRoute, requestsRoute, workspaceRoute, access] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/profile/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/requests/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/workspace/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/access.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /Come vuoi accedere\?/);
+  assert.match(page, /Accesso: \{accessLabels\[accountType\]\}/);
+  assert.match(page, /option\.id !== "owner" \|\| isOwner/);
+  assert.doesNotMatch(page, /useState<AccountType>\("owner"\)/);
+  assert.match(profileRoute, /isOwner: isSiteOwner\(user\)/);
+  assert.match(requestsRoute, /actor\.role === "private" && !actor\.isOwner/);
+  assert.match(workspaceRoute, /Questa sezione non e disponibile per il tuo accesso/);
+  assert.match(access, /OWNER_EMAILS/);
+});
