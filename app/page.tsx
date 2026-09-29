@@ -284,6 +284,11 @@ export default function Home() {
     if (accountType === "operator") return request.location === location && ((request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category))) || request.acceptedByUserId === currentUserId);
     return request.location === location;
   });
+  const openTaskCount = tasks.filter((task) => !task.done).length;
+  const pendingPurchaseCount = purchases.filter((item) => !item.done).length;
+  const activeJobCount = jobs.filter((job) => !job.done).length;
+  const openRequestCount = visibleRequests.filter((request) => request.status !== "Chiusa").length;
+  const taskProgress = tasks.length ? Math.round((tasks.length - openTaskCount) / tasks.length * 100) : 0;
   const visibleOperators = useMemo(() => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)) : realOperators.filter((operator) => operator.locations.includes(location) && (!operatorCategory || operator.category === operatorCategory)), [location, operatorCategory, showDemoData, realOperators]);
   const operatorCount = (category: string) => showDemoData ? operators.filter((operator) => operator.locations.includes(location) && operator.category === category).length : realOperators.filter((operator) => operator.locations.includes(location) && operator.category === category).length;
 
@@ -705,6 +710,17 @@ export default function Home() {
         <input ref={fileRef} hidden type="file" accept="image/*" capture="environment" onChange={(event) => identifyPhoto(event.target.files?.[0])} />
         <button className="quick" onClick={() => setChat(true)}><span className="quick-icon">Q</span><b>Cerca un prodotto</b><small>Ricambi e accessori</small><i>-&gt;</i></button>
         <button className="quick" onClick={() => goTo("community")}><span className="quick-icon">P</span><b>Trova un professionista</b><small>Servizi a {location}</small><i>-&gt;</i></button>
+      </section>
+
+      <section className="operations-overview" data-section="home" aria-labelledby="operations-title">
+        <div className="operations-heading"><div><span className="eyebrow">QUADRO DI BORDO</span><h2 id="operations-title">Centro operativo</h2><p>{accountType === "company" || accountType === "owner" ? "Una vista rapida delle attivita e dei lavori della tua organizzazione." : accountType === "operator" ? `Le tue attivita e le richieste compatibili a ${location}.` : "Agenda e richieste della tua imbarcazione, in un unico riepilogo."}</p></div><span className="operations-location">{location}</span></div>
+        <div className="operations-metrics">
+          <button className="operations-metric" onClick={() => goTo("agenda")}><span>Mansioni aperte</span><strong>{openTaskCount}</strong><small>{tasks.length ? `${taskProgress}% completate` : "Nessuna mansione inserita"}</small><i>Apri agenda →</i></button>
+          {(accountType === "private" || accountType === "company" || accountType === "owner") && <button className="operations-metric" onClick={() => goTo("agenda")}><span>Acquisti da seguire</span><strong>{pendingPurchaseCount}</strong><small>{purchases.length ? "Prodotti nella tua lista" : "Lista acquisti vuota"}</small><i>Apri ordini →</i></button>}
+          {(accountType === "company" || accountType === "owner") && <button className="operations-metric" onClick={() => setYardOpen(true)}><span>Commesse attive</span><strong>{activeJobCount}</strong><small>{jobs.length ? "Archivio personale" : "Nessuna commessa inserita"}</small><i>Apri commesse →</i></button>}
+          <button className="operations-metric" onClick={() => goTo("community")}><span>{accountType === "private" ? "Le mie richieste" : "Lavorazioni visibili"}</span><strong>{openRequestCount}</strong><small>{showDemoData ? "Include contenuti dimostrativi" : "Richieste non chiuse"}</small><i>{accountType === "private" ? "Apri richieste →" : "Apri lavorazioni →"}</i></button>
+        </div>
+        <div className="operations-footer"><div className="operations-progress"><div><b>Completamento mansioni</b><span>{taskProgress}%</span></div><i><em style={{ width: `${taskProgress}%` }} /></i></div><div className="operations-actions"><button onClick={() => openForm("task")}>+ Mansione</button>{(accountType === "private" || accountType === "company" || accountType === "owner") && <button onClick={() => openForm("purchase")}>+ Prodotto</button>}{(accountType === "company" || accountType === "owner") && <button onClick={() => openForm("job")}>+ Commessa</button>}<button onClick={() => openForm("request")}>+ Richiesta</button></div></div>
       </section>
 
       <section className="scan-page" data-section="scan">

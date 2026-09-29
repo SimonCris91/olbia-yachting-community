@@ -38,6 +38,26 @@
 .access-plan-card > div:last-child small { color: var(--muted); line-height: 1.4; }
 .access-plan-card > div:last-child button { background: var(--navy); color: #fff; }
 
+.operations-overview { max-width: 1132px; margin: 0 auto 58px; padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(145deg, #fff, #f5f9f8); box-shadow: 0 14px 36px rgba(3,19,39,.06); }
+.operations-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+.operations-heading h2 { margin: 7px 0 6px; color: var(--navy); font: 500 32px Georgia, serif; }
+.operations-heading p { max-width: 620px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.operations-location { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 9px 13px; color: var(--navy); font-size: 11px; font-weight: 800; }
+.operations-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.operations-metric { min-width: 0; border: 1px solid var(--line); border-radius: 15px; background: #fff; padding: 17px; color: var(--ink); text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, box-shadow .18s; }
+.operations-metric:hover { border-color: var(--aqua); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(3,19,39,.07); }
+.operations-metric span, .operations-metric small { display: block; color: var(--muted); font-size: 11px; }
+.operations-metric strong { display: block; margin: 7px 0; color: var(--navy); font-size: 28px; line-height: 1; }
+.operations-footer { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.operations-progress { width: min(100%, 330px); }
+.operations-progress > div:first-child { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 11px; }
+.operations-progress > div:last-child { height: 7px; overflow: hidden; border-radius: 99px; background: #e8efed; }
+.operations-progress > div:last-child span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0a879c, #d9b65b); }
+.operations-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.operations-actions button { border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--navy); padding: 10px 13px; font-size: 11px; font-weight: 800; cursor: pointer; }
+.operations-actions button:first-child { border-color: var(--navy); background: var(--navy); color: #fff; }
+.app-shell:not(.tab-home) .operations-overview { display: none; }
+
 .brand-logo { width: 46px; height: 46px; object-fit: cover; }
 .brand > span:last-child { display: flex; flex-direction: column; line-height: 1.05; }
 .brand > span:last-child small { margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 650; letter-spacing: .02em; }
@@ -90,6 +110,14 @@
   .auth-card .access-choice-grid button { min-height: 118px; padding: 16px; }
   .access-plan-card { grid-template-columns: 1fr; }
   .access-plan-card > div:last-child { min-width: 0; }
+  .operations-overview { margin: 0 16px 40px; padding: 20px; }
+  .operations-heading { flex-direction: column; gap: 12px; }
+  .operations-heading h2 { font-size: 28px; }
+  .operations-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .operations-metric { padding: 14px; }
+  .operations-footer { align-items: stretch; flex-direction: column; gap: 16px; }
+  .operations-progress { width: 100%; }
+  .operations-actions { justify-content: flex-start; }
   .operator-head { align-items: flex-start; gap: 12px; }
   .operator-head-actions { flex-wrap: wrap; justify-content: flex-end; }
   .source-list a { overflow-wrap: anywhere; }
