@@ -48,11 +48,12 @@
 .operations-metric:hover { border-color: var(--aqua); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(3,19,39,.07); }
 .operations-metric span, .operations-metric small { display: block; color: var(--muted); font-size: 11px; }
 .operations-metric strong { display: block; margin: 7px 0; color: var(--navy); font-size: 28px; line-height: 1; }
+.operations-metric i { display: block; margin-top: 12px; color: #087087; font-size: 11px; font-style: normal; font-weight: 800; }
 .operations-footer { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
 .operations-progress { width: min(100%, 330px); }
 .operations-progress > div:first-child { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 11px; }
-.operations-progress > div:last-child { height: 7px; overflow: hidden; border-radius: 99px; background: #e8efed; }
-.operations-progress > div:last-child span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0a879c, #d9b65b); }
+.operations-progress > i { display: block; height: 7px; overflow: hidden; border-radius: 99px; background: #e8efed; }
+.operations-progress > i em { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0a879c, #d9b65b); }
 .operations-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .operations-actions button { border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--navy); padding: 10px 13px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .operations-actions button:first-child { border-color: var(--navy); background: var(--navy); color: #fff; }
