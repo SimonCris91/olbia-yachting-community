@@ -93,8 +93,8 @@ test("selects role-specific app areas at sign-in and protects owner access", asy
 
 test("shows a small fictional local demo by default without exposing other users' private requests", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  const fixtures = page.split("const demoRequests: CommunityRequest[] = [")[1]?.split(/\];\r?\n\r?\nconst categoryMatches/)[0] ?? "";
-  assert.equal((fixtures.match(/demo: true/g) ?? []).length, 5);
+  const fixtures = page.split("const demoRequests: CommunityRequest[] = [")[1]?.split(/\];\r?\n\r?\nconst demoTasks/)[0] ?? "";
+  assert.equal((fixtures.match(/demo: true/g) ?? []).length, 8);
   assert.match(page, /const \[showDemoData, setShowDemoData\] = useState\(true\)/);
   assert.match(page, /const DEMO_MODE_KEY = "oyc-demo-mode-v2"/);
   assert.match(page, /request\.ownerId === "me" \|\| \(showDemoData && request\.demo === true\)/);
