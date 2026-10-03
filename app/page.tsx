@@ -12,7 +12,7 @@ type Purchase = { id: number; title: string; detail: string; price: string; done
 type Job = { id: number; title: string; details: string; done: boolean };
 type Message = { id: number; role: "user" | "assistant"; text: string; image?: string; sources?: { title: string; url: string }[] };
 type WebResult = { reply: string; sources?: { title: string; url: string }[] };
-type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico" | "Chiusa"; acceptedBy?: string; acceptedByUserId?: string };
+type CommunityRequest = { id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; created: string; status: "Aperta" | "Presa in carico" | "Chiusa"; acceptedBy?: string; acceptedByUserId?: string; demo?: boolean; requester?: string; urgency?: "Alta" | "Media" | "Bassa" };
 type Operator = { id: number; name: string; category: string; locations: LocationKey[]; distance?: string; rating?: string; response?: string; premium?: boolean; tags: string[]; note: string; phone?: string; email?: string; website?: string; telegram?: string; verified?: boolean; ownerUserId?: string };
 type ServiceCategory = { name: string; icon: string };
 type Language = "it" | "en" | "fr" | "es" | "de";
@@ -21,6 +21,7 @@ type Supplier = { name: string; category: string; description: string; url: stri
 
 const BRAND_NAME = "Olbia Yachting Community";
 const ASSISTANT_NAME = "Yachting Assistant";
+const DEMO_MODE_KEY = "oyc-demo-mode-v2";
 const accessLabels: Record<AccountType, string> = { private: "Privato", operator: "Operatore", company: "Ditta associata", owner: "Titolare" };
 const accessOptions: Array<{ id: AccountType; title: string; description: string; features: string }> = [
   { id: "private", title: "Privato", description: "Per armatori e proprietari", features: "Richieste, agenda, acquisti e assistente AI" },
@@ -129,11 +130,11 @@ const operators: Operator[] = [
 ];
 
 const demoRequests: CommunityRequest[] = [
-  { id: 9001, ownerId: "demo-owner-1", title: "Controllo caricabatterie in banchina", details: "M/Y 13 m - tensione instabile batterie servizi. Richiesta entro oggi.", category: "Elettrica", location: "Olbia", created: "12 min fa", status: "Aperta" },
-  { id: 9002, ownerId: "demo-owner-2", title: "Girante e controllo raffreddamento", details: "Motore entrobordo, temperatura alta al minimo. Barca a Olbia.", category: "Meccanica", location: "Olbia", created: "35 min fa", status: "Aperta" },
-  { id: 9003, ownerId: "demo-owner-3", title: "Pulizia teak prima dell'arrivo ospiti", details: "Yacht 21 m, intervento richiesto a Porto Cervo entro domani mattina.", category: "Pulizia", location: "Porto Cervo", created: "1 ora fa", status: "Aperta" },
-  { id: 9004, ownerId: "demo-owner-4", title: "Riparazione tubolare tender", details: "Microperdita su tubolare tender, zona Porto Rotondo.", category: "Tender e gommoni", location: "Porto Rotondo", created: "2 ore fa", status: "Aperta" },
-  { id: 9005, ownerId: "demo-owner-5", title: "Verifica autopilota", details: "Autopilota non tiene rotta, richiesta tecnico elettronica a Cagliari.", category: "Elettronica", location: "Cagliari", created: "Oggi", status: "Aperta" },
+  { id: 9001, ownerId: "demo-owner-1", demo: true, requester: "Armatore demo · imbarcazione fittizia 13 m", urgency: "Alta", title: "Allarme temperatura motore al minimo", details: "Motore diesel entrobordo: dopo circa 15 minuti al minimo compare l'allarme temperatura. Imbarcazione ormeggiata a Olbia; richiesta verifica di circuito acqua mare, girante e scambiatore prima del prossimo avviamento.", category: "Meccanica", location: "Olbia", created: "Scheda simulata", status: "Aperta" },
+  { id: 9002, ownerId: "demo-owner-2", demo: true, requester: "Comandante demo · unità fittizia 11 m", urgency: "Media", title: "Caricabatterie servizi: errore intermittente", details: "Il caricabatterie segnala un errore sporadico e la tensione delle batterie servizi scende durante la notte. Richiesta prova sotto carico e controllo dei collegamenti in banchina a Olbia.", category: "Elettrica", location: "Olbia", created: "Scheda simulata", status: "Aperta" },
+  { id: 9003, ownerId: "demo-owner-3", demo: true, requester: "Armatore demo · unità fittizia 10 m", urgency: "Media", title: "Pompa di sentina: galleggiante intermittente", details: "La pompa parte solo a volte in automatico; il comando manuale funziona. Richiesta verifica di galleggiante, cablaggio e scarico in banchina a Olbia.", category: "Elettrica", location: "Olbia", created: "Scheda simulata", status: "Presa in carico", acceptedBy: "Ditta demo fittizia Olbia 01 · impianti di bordo" },
+  { id: 9004, ownerId: "demo-owner-4", demo: true, requester: "Armatore demo · tender fittizio 3,4 m", urgency: "Media", title: "Perdita lenta sul tubolare del tender", details: "Il tubolare perde pressione nell'arco della giornata. Richiesta ricerca della perdita e preventivo per riparazione; tender disponibile a Porto Rotondo.", category: "Tender e gommoni", location: "Porto Rotondo", created: "Scheda simulata", status: "Aperta" },
+  { id: 9005, ownerId: "demo-owner-5", demo: true, requester: "Comandante demo · barca fittizia 12 m", urgency: "Bassa", title: "Autopilota: verifica sensore e calibrazione", details: "In navigazione l'autopilota fatica a mantenere la rotta. Richiesto controllo in banchina di sensore, cablaggio e calibrazione a Porto Cervo.", category: "Elettronica", location: "Porto Cervo", created: "Scheda simulata", status: "Chiusa", acceptedBy: "Ditta demo fittizia Gallura 02 · elettronica" },
 ];
 
 const categoryMatches = (requestCategory: string, serviceCategory: string) => {
@@ -180,7 +181,7 @@ export default function Home() {
   const [profileName, setProfileName] = useState("");
   const [telegramHandle, setTelegramHandle] = useState("");
   const [language, setLanguage] = useState<Language>("it");
-  const [showDemoData, setShowDemoData] = useState(false);
+  const [showDemoData, setShowDemoData] = useState(true);
   const [formMode, setFormMode] = useState<"task" | "purchase" | "job" | "request" | null>(null);
   const [operatorEditorOpen, setOperatorEditorOpen] = useState(false);
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
@@ -203,17 +204,17 @@ export default function Home() {
     const savedLocation = localStorage.getItem("yachting-assistant-location") as LocationKey | null;
     const savedLanguage = localStorage.getItem("yachting-assistant-language") as Language | null;
     const savedPlan = localStorage.getItem("marinaio-plan") as "Standard" | "Premium" | null;
-    const savedDemoMode = localStorage.getItem("barcaora-demo-mode");
+    const savedDemoMode = localStorage.getItem(DEMO_MODE_KEY);
     if (savedLocation && savedLocation in locationData) setLocation(savedLocation);
     if (savedLanguage && ["it", "en", "fr", "es", "de"].includes(savedLanguage)) setLanguage(savedLanguage);
     if (savedPlan === "Standard" || savedPlan === "Premium") setPlan(savedPlan);
-    if (savedDemoMode === "true") setShowDemoData(true);
+    if (savedDemoMode === "false") setShowDemoData(false);
   }, []);
 
   useEffect(() => { localStorage.setItem("yachting-assistant-location", location); }, [location]);
   useEffect(() => { localStorage.setItem("marinaio-plan", plan); }, [plan]);
   useEffect(() => { localStorage.setItem("yachting-assistant-language", language); document.documentElement.lang = language; }, [language]);
-  useEffect(() => { localStorage.setItem("barcaora-demo-mode", showDemoData ? "true" : "false"); }, [showDemoData]);
+  useEffect(() => { localStorage.setItem(DEMO_MODE_KEY, showDemoData ? "true" : "false"); }, [showDemoData]);
 
   useEffect(() => {
     const loadSavedRequests = async () => {
@@ -281,10 +282,10 @@ export default function Home() {
   const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
-    if (accountType === "private") return request.ownerId === "me";
+    if (accountType === "private") return request.ownerId === "me" || (showDemoData && request.demo === true);
     if (accountType === "operator") return request.location === location && ((request.status === "Aperta" && operatorCategories.some((category) => categoryMatches(request.category, category))) || request.acceptedByUserId === currentUserId);
     return request.location === location;
-  });
+  }).sort((left, right) => Number(left.demo === true) - Number(right.demo === true));
   const openTaskCount = tasks.filter((task) => !task.done).length;
   const pendingPurchaseCount = purchases.filter((item) => !item.done).length;
   const activeJobCount = jobs.filter((job) => !job.done).length;
@@ -720,7 +721,7 @@ export default function Home() {
           <button className="operations-metric" onClick={() => goTo("agenda")}><span>Mansioni aperte</span><strong>{openTaskCount}</strong><small>{tasks.length ? `${taskProgress}% completate` : "Nessuna mansione inserita"}</small><i>Apri agenda →</i></button>
           {(accountType === "private" || accountType === "company" || accountType === "owner") && <button className="operations-metric" onClick={() => goTo("agenda")}><span>Acquisti da seguire</span><strong>{pendingPurchaseCount}</strong><small>{purchases.length ? "Prodotti nella tua lista" : "Lista acquisti vuota"}</small><i>Apri ordini →</i></button>}
           {(accountType === "company" || accountType === "owner") && <button className="operations-metric" onClick={() => setYardOpen(true)}><span>Commesse attive</span><strong>{activeJobCount}</strong><small>{jobs.length ? "Archivio personale" : "Nessuna commessa inserita"}</small><i>Apri commesse →</i></button>}
-          <button className="operations-metric" onClick={() => goTo("community")}><span>{accountType === "private" ? "Le mie richieste" : "Lavorazioni visibili"}</span><strong>{openRequestCount}</strong><small>{showDemoData ? "Include contenuti dimostrativi" : "Richieste non chiuse"}</small><i>{accountType === "private" ? "Apri richieste →" : "Apri lavorazioni →"}</i></button>
+          <button className="operations-metric" onClick={() => goTo("community")}><span>{accountType === "private" ? showDemoData ? "Richieste ed esempi" : "Le mie richieste" : "Lavorazioni visibili"}</span><strong>{openRequestCount}</strong><small>{showDemoData ? "Include contenuti dimostrativi" : "Richieste non chiuse"}</small><i>{accountType === "private" ? "Apri richieste →" : "Apri lavorazioni →"}</i></button>
         </div>
         <div className="operations-footer"><div className="operations-progress"><div><b>Completamento mansioni</b><span>{taskProgress}%</span></div><i><em style={{ width: `${taskProgress}%` }} /></i></div><div className="operations-actions"><button onClick={() => openForm("task")}>+ Mansione</button>{(accountType === "private" || accountType === "company" || accountType === "owner") && <button onClick={() => openForm("purchase")}>+ Prodotto</button>}{(accountType === "company" || accountType === "owner") && <button onClick={() => openForm("job")}>+ Commessa</button>}<button onClick={() => openForm("request")}>+ Richiesta</button></div></div>
       </section>
@@ -767,9 +768,9 @@ export default function Home() {
         <div className="community-copy">
           <span className="eyebrow light">RETE INTERVENTI - {location.toUpperCase()}</span>
           <h2>{location} {BRAND_NAME}</h2>
-          <p>{accountType === "private" ? "Accesso privato: puoi pubblicare richieste e vedere solo le tue." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
+          <p>{accountType === "private" ? "Accesso privato: gestisci le tue richieste; gli esempi demo sono pubblici e separati dai dati reali." : accountType === "operator" ? "Accesso operatore: vedi richieste aperte compatibili con zona e mansione." : accountType === "company" ? "Accesso ditta associata: lavorazioni, ordini e commesse della zona." : "Accesso titolare: tutte le sezioni sono disponibili separatamente."}</p>
           <div className="community-access">
-            <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>solo le mie richieste</span></button>
+            <button className={accountType === "private" ? "active" : ""} onClick={() => void changeAccountType("private")}><b>Privato</b><span>{showDemoData ? "le mie + esempi demo" : "solo le mie richieste"}</span></button>
             <button className={accountType === "operator" ? "active" : ""} onClick={() => void changeAccountType("operator")}><b>Operatore</b><span>lavori compatibili</span></button>
             <button className={accountType === "company" ? "active" : ""} onClick={() => void changeAccountType("company")}><b>Ditta associata</b><span>richieste di zona</span></button>
             {isOwner && <button className={accountType === "owner" ? "active" : ""} onClick={() => void changeAccountType("owner")}><b>Titolare</b><span>accesso completo</span></button>}
@@ -777,10 +778,10 @@ export default function Home() {
           <div className="reality-card">
             <div>
               <b>Stato dati</b>
-              <span>{showDemoData ? "Stai visualizzando anche contenuti demo di esempio." : "Stai visualizzando solo dati reali del tuo account e richieste salvate."}</span>
+              <span>{showDemoData ? "Simulazione attiva: le schede demo e le ditte indicate sono fittizie, non sono richieste o aziende reali. I tuoi dati restano separati." : "Simulazione nascosta: vedi solo i dati reali del tuo account e le richieste salvate."}</span>
             </div>
             <button type="button" className={showDemoData ? "demo-toggle active" : "demo-toggle"} onClick={() => setShowDemoData((value) => !value)}>
-              {showDemoData ? "Nascondi demo" : "Mostra demo"}
+              {showDemoData ? "Solo dati reali" : "Esplora simulazione"}
             </button>
           </div>
           {!signedIn && <button className="publish-job" onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Accedi per salvare richieste e lavorazioni</button>}
@@ -788,10 +789,10 @@ export default function Home() {
           <div className={`community-feed ${accountType === "private" ? "" : "pro-feed"}`}>
             {!visibleRequests.length && <div className="community-empty">{accountType === "private" ? `Non hai ancora pubblicato richieste a ${location}.` : `Nessuna richiesta visibile per questo accesso a ${location}.`}</div>}
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
-              const isDemo = request.ownerId.startsWith("demo-");
+              const isDemo = request.demo === true || request.ownerId.startsWith("demo-");
               const canClose = !isDemo && request.status !== "Chiusa" && (request.ownerId === "me" || request.acceptedByUserId === currentUserId);
               const shareText = `Olbia Yachting Community Request\n${request.title}\n${request.details}\nZona: ${request.location}\nCategoria: ${request.category}`;
-              return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p><small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Demo" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}{!isDemo && <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">Condividi su WhatsApp</a>}</div></article>;
+              return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p>{isDemo && request.requester && <small className="demo-request-meta">Richiedente: {request.requester}{request.urgency ? ` · Priorità ${request.urgency.toLowerCase()}` : ""}</small>}<small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Esempio fittizio · sola visualizzazione" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}{isDemo && <small className="demo-request-meta">Questa scheda non è stata inviata da un cliente reale.</small>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}{!isDemo && <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">Condividi su WhatsApp</a>}</div></article>;
             })}
           </div>
         </div>
