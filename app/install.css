@@ -20,7 +20,7 @@
 .auth-card small { display: block; color: var(--muted); line-height: 1.45; }
 .access-screen { padding: 32px 20px; }
 .access-choice-card { width: min(100%, 860px); padding: 28px 34px 32px; }
-.access-choice-card > img { width: 112px; margin-bottom: 14px; }
+.access-choice-card > img { width: 112px; height: 112px; margin-bottom: 14px; object-fit: cover; border: 1px solid rgba(217,182,91,.72); border-radius: 24px; background: #061b31; box-shadow: 0 10px 28px rgba(3,19,39,.18); }
 .access-choice-card > p { max-width: 620px; margin: 0 auto 20px; }
 .access-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; text-align: left; }
 .auth-card .access-choice-grid button { min-height: 140px; margin: 0; padding: 20px; border: 1px solid var(--line); background: #fff; color: var(--ink); display: flex; flex-direction: column; align-items: flex-start; gap: 7px; box-shadow: 0 9px 22px rgba(3,19,39,.06); }
