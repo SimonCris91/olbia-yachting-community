@@ -168,7 +168,13 @@ export default function PassportDashboard() {
   const generateReport = () => {
     const reportEntries = selectedComponent === "all" ? sortedEntries : selectedComponentEntries;
     const boat = "Demo Boat Orbia";
-    const scope = selectedComponent === "all" ? "Tutti i componenti / All components" : componentLabel(selectedComponent);
+    const scopeIt = selectedComponent === "all" ? "Tutti i componenti" : componentLabel(selectedComponent);
+    const componentNamesEn: Record<string, string> = {
+      engine: "Engine", display: "Display", nmea: "NMEA 2000 network", fuel: "Fuel sensors",
+      electrical: "Electrical system", hull: "Hull and deck", safety: "Safety equipment",
+      documents: "Documents", general: "General",
+    };
+    const scopeEn = selectedComponent === "all" ? "All components" : componentNamesEn[selectedComponent] ?? selectedComponent;
     const sources = [...new Set(reportEntries.map((entry) => entry.source))];
     const manualExecutions = reportEntries.filter((entry) => entry.executionConfirmedAt);
     const open = reportEntries.filter((entry) => entry.status !== "Chiuso");
@@ -181,7 +187,7 @@ export default function PassportDashboard() {
       "Motore: Honda BF135 (dato del caso, non verificato)",
       "Strumentazione: display ASE 4.3 | Rete: NMEA 2000 | Sensori: due sensori carburante analogici",
       "Area: Olbia / Costa Smeralda (scenario demo)",
-      `Ambito: ${scope}`,
+      `Ambito: ${scopeIt}`,
       `Problemi segnalati nel testo: ${issues.length ? issues.map((entry) => `${entry.title} — ${entry.description}`).join(" | ") : "nessuna segnalazione rilevata nei record inclusi"}`,
       `Verifiche registrate: ${checks.length ? checks.map((entry) => `${entry.title} [stato ${entry.status}; fonte: ${entry.source}]`).join(" | ") : "nessuna voce confermata manualmente"}`,
       `Interventi eseguiti, solo con attestazione manuale: ${manualExecutions.length ? manualExecutions.map((entry) => `${entry.title} (${entry.executionConfirmedAt})`).join(" | ") : "nessun intervento attestato come eseguito"}`,
@@ -197,7 +203,7 @@ export default function PassportDashboard() {
       "Engine: Honda BF135 (case data, not verified)",
       "Instrumentation: ASE 4.3 display | Network: NMEA 2000 | Sensors: two analogue fuel sensors",
       "Operating area: Olbia / Costa Smeralda (demo scenario)",
-      `Scope: ${scope}`,
+      `Scope: ${scopeEn}`,
       `Issues mentioned in the text: ${issues.length ? issues.map((entry) => `${entry.title} — ${entry.description}`).join(" | ") : "no issue found in the included records"}`,
       `Recorded checks: ${checks.length ? checks.map((entry) => `${entry.title} [status ${entry.status}; source: ${entry.source}]`).join(" | ") : "no manually confirmed entry"}`,
       `Work marked as performed, only with manual attestation: ${manualExecutions.length ? manualExecutions.map((entry) => `${entry.title} (${entry.executionConfirmedAt})`).join(" | ") : "no work attested as performed"}`,
@@ -205,6 +211,7 @@ export default function PassportDashboard() {
       `Open activities: ${open.length ? open.map((entry) => `${entry.title} (${entry.status})`).join(" | ") : "none"}`,
       "Recommendation: compare reports with actual manuals, wiring diagrams and measurements; local classification is not a diagnosis.",
       `Sources/origins: ${sources.join(" | ") || "none"}`,
+      "Original record text remains in its entered language; this prototype does not translate records automatically.",
       "Note: demo data does not prove real work, diagnoses or documents.",
     ].join("\n");
     setReport({ it, en });
