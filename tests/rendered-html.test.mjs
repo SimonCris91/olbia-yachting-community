@@ -14,16 +14,16 @@ async function render() {
   );
 }
 
-test("server-renders the Olbia Yachting Community entry experience", async () => {
+test("server-renders the Yachting Agent AI entry experience", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Olbia Yachting Community - Yachting Assistant<\/title>/i);
-  assert.match(html, /OLBIA YACHTING COMMUNITY/);
+  assert.match(html, /<title>Yachting Agent AI \| L’agente nautico intelligente<\/title>/i);
+  assert.match(html, /YACHTING AGENT AI/);
   assert.match(html, /Prepariamo il tuo spazio personale/);
-  assert.match(html, /olbia-yachting-brand\.png/);
+  assert.match(html, /yachting-agent-ai-mark\.png/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 

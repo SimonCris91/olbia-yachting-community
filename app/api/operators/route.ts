@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSiteOwner, type ProfileRole } from "../../access";
 
-const locations = ["Olbia", "Porto Cervo", "Porto Rotondo", "Cagliari", "Alghero"] as const;
+const locations = ["Olbia", "Porto Cervo", "Porto Rotondo", "Golfo Aranci", "La Maddalena", "Cagliari", "Alghero"] as const;
 const roles = ["operator", "company"] as const;
 
 async function identity() {

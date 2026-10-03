@@ -242,7 +242,7 @@ export default function PassportDashboard() {
   return (
     <main className="passport-shell">
       <header className="passport-header">
-        <Link className="passport-brand" href="/" aria-label="Torna a Olbia Yachting Community"><span className="passport-brand-mark">O</span><span><b>OLBIA</b><small>YACHTING COMMUNITY</small></span></Link>
+        <Link className="passport-brand" href="/" aria-label="Torna a Yachting Agent AI"><span className="passport-brand-mark">Y</span><span><b>YACHTING</b><small>AGENT AI</small></span></Link>
         <div className="passport-header-right"><span className="passport-demo-tag">{hydrated ? "ARCHIVIO LOCALE PRONTO" : "APRO ARCHIVIO LOCALE…"}</span><Link href="/">Torna alla community</Link></div>
       </header>
 
@@ -318,7 +318,7 @@ export default function PassportDashboard() {
 
         {reportOpen && report && <div className="passport-modal-backdrop"><section className="passport-report-modal" role="dialog" aria-modal="true" aria-labelledby="passport-report-title"><button className="passport-modal-close" onClick={() => setReportOpen(false)} aria-label="Chiudi rapporto">×</button><span className="passport-eyebrow">OUTPUT BILINGUE</span><h2 id="passport-report-title">Rapporto tecnico demo</h2><p>Le voci chiuse non sono interpretate automaticamente come lavori eseguiti: il rapporto mostra esecuzioni solo se attestate manualmente.</p><div className="passport-report-columns"><pre>{report.it}</pre><pre>{report.en}</pre></div><div className="passport-report-actions"><button className="passport-secondary" onClick={() => void copyReport()}>Copia rapporto</button><button className="passport-primary" onClick={downloadReport}>Scarica TXT bilingue</button></div></section></div>}
 
-        <footer className="passport-footer"><span>Olbia Yachting Community · Passaporto Digitale Refit · prototipo locale</span><Link href="/">Olbia Yachting Community</Link></footer>
+        <footer className="passport-footer"><span>Yachting Agent AI · Passaporto Digitale Refit · prototipo locale</span><Link href="/">Yachting Agent AI</Link></footer>
       </div>
     </main>
   );

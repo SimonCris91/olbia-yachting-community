@@ -89,7 +89,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 ## Passaporto Digitale Refit
 
-The Olbia Yachting Community refit-passport prototype is available at
+The Yachting Agent AI refit-passport prototype is available at
 `/refit-passport`. It is a separate operational demo with a clearly simulated
 boat history, local-only browser storage, deterministic text classification,
 component filters, manual status controls, and an Italian/English report.

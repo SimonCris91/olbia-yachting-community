@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "home" | "agenda" | "scan" | "community" | "profile";
-type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Cagliari" | "Alghero";
+type LocationKey = "Olbia" | "Porto Cervo" | "Porto Rotondo" | "Golfo Aranci" | "La Maddalena" | "Cagliari" | "Alghero";
 type AccountType = "private" | "operator" | "company" | "owner";
 type ProfileRole = Exclude<AccountType, "owner">;
 type Task = { id: number; title: string; boat: string; due: string; priority: "Alta" | "Media" | "Bassa"; done: boolean };
@@ -19,8 +19,9 @@ type Language = "it" | "en" | "fr" | "es" | "de";
 type WhatsAppDraft = { isRelevant: boolean; title: string; category: string; details: string; urgency: string; missing: string[]; replyMessage: string };
 type Supplier = { name: string; category: string; description: string; url: string };
 
-const BRAND_NAME = "Olbia Yachting Community";
-const ASSISTANT_NAME = "Yachting Assistant";
+const BRAND_NAME = "Yachting Agent AI";
+const ASSISTANT_NAME = "Yachting Agent AI";
+const BRAND_TAGLINE = "L’agente nautico intelligente.";
 const DEMO_MODE_KEY = "oyc-demo-mode-v2";
 const accessLabels: Record<AccountType, string> = { private: "Privato", operator: "Operatore", company: "Ditta associata", owner: "Titolare" };
 const accessOptions: Array<{ id: AccountType; title: string; description: string; features: string }> = [
@@ -80,6 +81,26 @@ const locationData: Record<LocationKey, { weather: string; sea: string; services
       { name: "Tender e gommoni", icon: "T" },
       { name: "Tappezzeria nautica", icon: "P" },
       { name: "Ricambi nautici", icon: "R" },
+    ],
+  },
+  "Golfo Aranci": {
+    weather: "26 deg",
+    sea: "brezza da NE",
+    services: [
+      { name: "Meccanica marina", icon: "M" },
+      { name: "Tender e gommoni", icon: "T" },
+      { name: "Ormeggi e marina", icon: "O" },
+      { name: "Ricambi nautici", icon: "R" },
+    ],
+  },
+  "La Maddalena": {
+    weather: "25 deg",
+    sea: "mare poco mosso",
+    services: [
+      { name: "Assistenza in banchina", icon: "A" },
+      { name: "Elettrica nautica", icon: "E" },
+      { name: "Vele e rigging", icon: "V" },
+      { name: "Cambusa e forniture", icon: "F" },
     ],
   },
   Cagliari: {
@@ -658,15 +679,15 @@ export default function Home() {
     }
   };
 
-  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small><a className="auth-passport-link" href="/refit-passport">Apri la demo operativa Passaporto Digitale Refit →</a></div></main>;
-  if (accessPickerOpen) return <main className="auth-screen access-screen"><section className="auth-card access-choice-card"><img src="/olbia-community-access-mark-v2.png" alt={`${BRAND_NAME} — bussola, yacht e onde`} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Come vuoi accedere?</h1><p>Scegli lo spazio adatto alla tua attivita. Potrai cambiarlo in seguito dal pulsante Accesso.</p><div className="access-choice-grid">{accessOptions.filter((option) => option.id !== "owner" || isOwner).map((option) => <button key={option.id} type="button" onClick={() => void changeAccountType(option.id)}><b>{option.title}</b><span>{option.description}</span><small>{option.features}</small></button>)}</div><a href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a></section></main>;
+  if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-agent-ai-mark.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>{BRAND_TAGLINE} Verifico il tuo accesso in sicurezza.</p></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/yachting-agent-ai-mark.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>{BRAND_TAGLINE} Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small><a className="auth-passport-link" href="/refit-passport">Apri la demo operativa Passaporto Digitale Refit →</a></div></main>;
+  if (accessPickerOpen) return <main className="auth-screen access-screen"><section className="auth-card access-choice-card"><img src="/yachting-agent-ai-mark.png" alt={`${BRAND_NAME} — bussola, yacht e onde`} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Come vuoi accedere?</h1><p>{BRAND_TAGLINE} Scegli lo spazio adatto alla tua attivita. Potrai cambiarlo in seguito dal pulsante Accesso.</p><div className="access-choice-grid">{accessOptions.filter((option) => option.id !== "owner" || isOwner).map((option) => <button key={option.id} type="button" onClick={() => void changeAccountType(option.id)}><b>{option.title}</b><span>{option.description}</span><small>{option.features}</small></button>)}</div><a href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a></section></main>;
 
   return (
     <main className={`app-shell tab-${tab}`}>
       <header className="topbar">
         <button className="brand" onClick={() => goTo("home")} aria-label="Torna alla home">
-          <img className="brand-logo" src="/yachting-community-logo.png" alt={`${BRAND_NAME} logo`} /><span>{BRAND_NAME}<small>{ASSISTANT_NAME}</small></span>
+          <img className="brand-logo" src="/yachting-agent-ai-mark.png" alt={`${BRAND_NAME} logo`} /><span>{BRAND_NAME}<small>{BRAND_TAGLINE}</small></span>
         </button>
         <div className="top-actions">
           <div className="location-wrap">
@@ -694,8 +715,8 @@ export default function Home() {
       </nav>
 
       <picture className="brand-showcase" data-section="home">
-        <source media="(max-width: 700px)" srcSet="/olbia-yachting-brand.png" />
-        <img src="/olbia-yachting-hero.png" alt="Olbia Yachting Community - Connect, Share, Sail" />
+        <source media="(max-width: 700px)" srcSet="/yachting-agent-ai-mark.png" />
+        <img src="/yachting-agent-ai-hero.png" alt="Yachting Agent AI — l’agente nautico intelligente" />
       </picture>
 
       <section className="hero" data-section="home">
@@ -791,7 +812,7 @@ export default function Home() {
             {visibleRequests.slice(0, accountType === "private" ? 6 : 10).map((request) => {
               const isDemo = request.demo === true || request.ownerId.startsWith("demo-");
               const canClose = !isDemo && request.status !== "Chiusa" && (request.ownerId === "me" || request.acceptedByUserId === currentUserId);
-              const shareText = `Olbia Yachting Community Request\n${request.title}\n${request.details}\nZona: ${request.location}\nCategoria: ${request.category}`;
+              const shareText = `${BRAND_NAME} Request\n${request.title}\n${request.details}\nZona: ${request.location}\nCategoria: ${request.category}`;
               return <article key={request.id} className={request.status === "Chiusa" ? "request-closed" : ""}><span>{request.status} - {request.created} - {request.category}</span><b>{request.title}</b><p>{request.details}</p>{isDemo && request.requester && <small className="demo-request-meta">Richiedente: {request.requester}{request.urgency ? ` · Priorità ${request.urgency.toLowerCase()}` : ""}</small>}<small className={`data-badge ${isDemo ? "demo" : "live"}`}>{isDemo ? "Esempio fittizio · sola visualizzazione" : "Dato reale"}</small>{request.acceptedBy && <em>In carico a {request.acceptedBy}</em>}{isDemo && <small className="demo-request-meta">Questa scheda non è stata inviata da un cliente reale.</small>}<div className="request-actions">{accountType !== "private" && request.status === "Aperta" && !isDemo && <button onClick={() => acceptRequest(request.id)}>Prendi in carico</button>}{canClose && <button className="close-request" onClick={() => closeRequest(request.id)}>Chiudi lavorazione</button>}{!isDemo && <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">Condividi su WhatsApp</a>}</div></article>;
             })}
           </div>
@@ -805,12 +826,12 @@ export default function Home() {
             {webResult && <div className="web-result"><RichText text={webResult.reply} />{webResult.sources?.length ? <div className="source-list"><span>Fonti web</span>{webResult.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{index + 1}. {source.title}</a>)}</div> : null}</div>}
             <div className="operator-list">
               {!visibleOperators.length && <div className="community-empty">{showDemoData ? "Nessun operatore demo in questa categoria. Pubblica una richiesta e verra mostrata agli iscritti compatibili." : "Qui compariranno gli operatori reali che pubblicano un profilo per questa zona."}</div>}
-              {visibleOperators.map((operator) => { const whatsAppPhone = operator.phone ? normalizeWhatsAppPhone(operator.phone) : ""; const contactMessage = `Buongiorno ${operator.name}, invio una richiesta tramite Olbia Yachting Community. Zona: ${location}. Vorrei informazioni per un intervento ${operator.category}.`; return <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
+              {visibleOperators.map((operator) => { const whatsAppPhone = operator.phone ? normalizeWhatsAppPhone(operator.phone) : ""; const contactMessage = `Buongiorno ${operator.name}, invio una richiesta tramite ${BRAND_NAME}. Zona: ${location}. Vorrei informazioni per un intervento ${operator.category}.`; return <article className={`operator-card ${selectedOperator?.id === operator.id ? "selected" : ""}`} key={operator.id} onClick={() => setSelectedOperator(operator)}>
                 <div className="operator-title"><b>{operator.name}</b>{showDemoData && <span>Demo</span>}{!showDemoData && operator.verified && <span>Verificato</span>}{operator.premium && <span>Premium</span>}</div>
                 <p>{operator.note}</p>
                 <div className="operator-meta"><span>{operator.category}</span>{operator.distance && <span>{operator.distance}</span>}{operator.rating && <span>{operator.rating}/5</span>}</div>
                 <div className="operator-tags">{operator.tags.map((tag) => <small key={tag}>{tag}</small>)}</div>
-                {!showDemoData && <div className="operator-contact">{operator.phone && <a href={`tel:${operator.phone}`}>{operator.phone}</a>}{whatsAppPhone && <a href={`https://wa.me/${whatsAppPhone}?text=${encodeURIComponent(contactMessage)}`} target="_blank" rel="noreferrer">WhatsApp</a>}{operator.email && <a href={`mailto:${operator.email}?subject=${encodeURIComponent("Olbia Yachting Community Request")}&body=${encodeURIComponent(contactMessage)}`}>Email richiesta</a>}{operator.telegram && normalizeTelegramLink(operator.telegram) && <a href={normalizeTelegramLink(operator.telegram)} target="_blank" rel="noreferrer">Telegram</a>}{operator.website && <a href={operator.website.startsWith("http") ? operator.website : `https://${operator.website}`} target="_blank" rel="noreferrer">Sito</a>}</div>}
+                {!showDemoData && <div className="operator-contact">{operator.phone && <a href={`tel:${operator.phone}`}>{operator.phone}</a>}{whatsAppPhone && <a href={`https://wa.me/${whatsAppPhone}?text=${encodeURIComponent(contactMessage)}`} target="_blank" rel="noreferrer">WhatsApp</a>}{operator.email && <a href={`mailto:${operator.email}?subject=${encodeURIComponent(`${BRAND_NAME} Request`)}&body=${encodeURIComponent(contactMessage)}`}>Email richiesta</a>}{operator.telegram && normalizeTelegramLink(operator.telegram) && <a href={normalizeTelegramLink(operator.telegram)} target="_blank" rel="noreferrer">Telegram</a>}{operator.website && <a href={operator.website.startsWith("http") ? operator.website : `https://${operator.website}`} target="_blank" rel="noreferrer">Sito</a>}</div>}
                 <div className="operator-actions"><em>{operator.response ?? (showDemoData ? "Disponibilita demo" : "Profilo reale pubblicato")}</em><button onClick={(event) => { event.stopPropagation(); requestOperator(operator); }}>Richiedi intervento</button></div>
               </article>; })}
             </div>

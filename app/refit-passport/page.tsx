@@ -3,7 +3,7 @@ import PassportDashboard from "./passport-dashboard";
 import "./passport.css";
 
 export const metadata: Metadata = {
-  title: "Passaporto Digitale Refit | Olbia Yachting Community",
+  title: "Passaporto Digitale Refit | Yachting Agent AI",
   description: "Demo operativa bilingue per cronologia tecnica nautica, documenti e manutenzione.",
 };
 

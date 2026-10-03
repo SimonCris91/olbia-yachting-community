@@ -14,22 +14,22 @@ import "./install.css";
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://metayachting-ai.simonecris91.chatgpt.site"),
-  title: "Olbia Yachting Community - Yachting Assistant",
-  description: "Identifica componenti, trova ricambi e professionisti, organizza acquisti e lavori della tua imbarcazione con la community di Olbia.",
+  metadataBase: new URL("https://yachting.aquariusageai.com"),
+  title: "Yachting Agent AI | L’agente nautico intelligente",
+  description: "Yachting Agent AI, l’agente nautico intelligente per identificare componenti, trovare ricambi e organizzare lavori di bordo.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/yachting-community-logo.png", apple: "/yachting-community-logo.png" },
+  icons: { icon: "/yachting-agent-ai-mark.png", apple: "/yachting-agent-ai-mark.png" },
   themeColor: "#09283b",
   openGraph: {
-    title: "Olbia Yachting Community",
-    description: "Connect. Share. Sail. La community nautica di Olbia con il suo Yachting Assistant.",
-    images: [{ url: "/og.png", width: 2032, height: 774, alt: "Olbia Yachting Community" }],
+    title: "Yachting Agent AI",
+    description: "L’agente nautico intelligente per la tua barca.",
+    images: [{ url: "/yachting-agent-ai-hero.png", width: 1536, height: 1024, alt: "Yachting Agent AI" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Olbia Yachting Community",
-    description: "Connect. Share. Sail. La community nautica di Olbia con il suo Yachting Assistant.",
-    images: ["/og.png"],
+    title: "Yachting Agent AI",
+    description: "L’agente nautico intelligente per la tua barca.",
+    images: ["/yachting-agent-ai-hero.png"],
   },
 };
 

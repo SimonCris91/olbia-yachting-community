@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-5.6-terra",
-        instructions: `Trasforma un messaggio WhatsApp ricevuto da un cliente nautico in una scheda di lavoro chiara per Olbia Yachting Community. Non inventare barca, luogo, urgenza, guasto, ricambi o contatti non presenti. Inserisci nei campi mancanti le informazioni essenziali da chiedere. La localita selezionata nell'app e ${body.location ?? "Olbia"}. Se il testo non riguarda nautica, assistenza, fornitura o lavoro di bordo, imposta isRelevant su false. Prepara anche una risposta WhatsApp breve e professionale che confermi la ricezione e chieda solo i dati mancanti.`,
+        instructions: `Trasforma un messaggio WhatsApp ricevuto da un cliente nautico in una scheda di lavoro chiara per Yachting Agent AI. Non inventare barca, luogo, urgenza, guasto, ricambi o contatti non presenti. Inserisci nei campi mancanti le informazioni essenziali da chiedere. La localita selezionata nell'app e ${body.location ?? "Olbia"}. Se il testo non riguarda nautica, assistenza, fornitura o lavoro di bordo, imposta isRelevant su false. Prepara anche una risposta WhatsApp breve e professionale che confermi la ricezione e chieda solo i dati mancanti.`,
         input: message,
         text: {
           format: {

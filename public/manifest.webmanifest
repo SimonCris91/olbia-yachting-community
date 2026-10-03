@@ -1,12 +1,12 @@
 {
-  "name": "Olbia Yachting Community - Yachting Assistant",
-  "short_name": "Olbia Yachting",
-  "description": "Community nautica e assistente AI per diagnosi, ricambi, operatori e lavori di bordo.",
+  "name": "Yachting Agent AI",
+  "short_name": "Yachting Agent",
+  "description": "L’agente nautico intelligente per la tua barca.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7faf9",
   "theme_color": "#09283b",
   "icons": [
-    { "src": "/yachting-community-logo.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/yachting-agent-ai-mark.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any maskable" }
   ]
 }
