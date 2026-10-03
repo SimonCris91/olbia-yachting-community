@@ -12,7 +12,7 @@
 .language-select { border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 11px; font-weight: 800; padding: 8px 5px; }
 .auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 75% 15%, rgba(24,183,212,.2), transparent 26%), linear-gradient(145deg, #031327, #082d4b); }
 .auth-card { width: min(100%, 470px); padding: 24px 30px 34px; border: 1px solid rgba(217,182,91,.45); border-radius: 24px; background: rgba(255,255,255,.98); box-shadow: 0 24px 70px rgba(0, 8, 18, .35); text-align: center; }
-.auth-card img { width: min(100%, 285px); height: auto; aspect-ratio: 1/1; object-fit: cover; border-radius: 18px; margin-bottom: 18px; }
+.auth-card img { display: block; width: min(100%, 285px); height: auto; aspect-ratio: 1/1; object-fit: contain; object-position: center; border-radius: 18px; margin: 0 auto 18px; }
 .auth-card > span { display: block; color: #0b7892; font-size: 11px; font-weight: 900; letter-spacing: .12em; }
 .auth-card h1 { margin: 12px 0; font-family: Georgia, serif; font-size: 32px; font-weight: 500; }
 .auth-card p { color: var(--muted); line-height: 1.55; }
