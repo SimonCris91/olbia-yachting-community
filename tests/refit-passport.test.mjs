@@ -70,4 +70,5 @@ test("operational screen supports traceability, filters, bilingual report and lo
   assert.match(page, /Attesta intervento eseguito/);
   assert.match(page, /Segna voce come chiusa/);
   assert.match(rootPage, /href="\/refit-passport"/);
+  assert.match(rootPage, /<a className="passport-entry-link" href="\/refit-passport">/);
 });
