@@ -752,7 +752,13 @@ export default function Home() {
           <p>Identifica, trova e organizza. {BRAND_NAME} ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
           <a className="passport-entry-link" href="/refit-passport"><span aria-hidden="true">↗</span> Apri demo operativa · Passaporto Digitale Refit</a>
         </div>
-        <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
+        <div className="hero-utilities" aria-label={`Meteo e orientamento per ${location}`}>
+          <div className="compass-rose" aria-label="Rosa dei venti nautica">
+            <span className="compass-north">N</span><span className="compass-east">E</span><span className="compass-south">S</span><span className="compass-west">O</span>
+            <i className="compass-needle compass-needle-main" /><i className="compass-needle compass-needle-cross" /><b>✦</b>
+          </div>
+          <div className="weather"><span>✦</span><strong>{currentLocation.weather}</strong><small>{location} · {currentLocation.sea}</small></div>
+        </div>
       </section>
 
       <section className="quick-grid" data-section="home" aria-label="Azioni rapide">
