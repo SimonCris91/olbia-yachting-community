@@ -3,7 +3,7 @@ import PassportDashboard from "./passport-dashboard";
 import "./passport.css";
 
 export const metadata: Metadata = {
-  title: "Passaporto Digitale Refit | Orbia IoT in Community",
+  title: "Passaporto Digitale Refit | Olbia Yachting Community",
   description: "Demo operativa bilingue per cronologia tecnica nautica, documenti e manutenzione.",
 };
 

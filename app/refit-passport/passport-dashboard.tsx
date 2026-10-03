@@ -167,7 +167,7 @@ export default function PassportDashboard() {
 
   const generateReport = () => {
     const reportEntries = selectedComponent === "all" ? sortedEntries : selectedComponentEntries;
-    const boat = "Demo Boat Orbia";
+    const boat = "Yacht dimostrativo OYC";
     const scopeIt = selectedComponent === "all" ? "Tutti i componenti" : componentLabel(selectedComponent);
     const componentNamesEn: Record<string, string> = {
       engine: "Engine", display: "Display", nmea: "NMEA 2000 network", fuel: "Fuel sensors",
@@ -242,7 +242,7 @@ export default function PassportDashboard() {
   return (
     <main className="passport-shell">
       <header className="passport-header">
-        <Link className="passport-brand" href="/" aria-label="Torna a Olbia Yachting Community"><span className="passport-brand-mark">O</span><span><b>ORBIA</b><small>IoT in Community</small></span></Link>
+        <Link className="passport-brand" href="/" aria-label="Torna a Olbia Yachting Community"><span className="passport-brand-mark">O</span><span><b>OLBIA</b><small>YACHTING COMMUNITY</small></span></Link>
         <div className="passport-header-right"><span className="passport-demo-tag">{hydrated ? "ARCHIVIO LOCALE PRONTO" : "APRO ARCHIVIO LOCALE…"}</span><Link href="/">Torna alla community</Link></div>
       </header>
 
@@ -255,7 +255,7 @@ export default function PassportDashboard() {
         <div className="passport-disclaimer" role="note"><b>Demo isolata.</b> {demoDisclaimer} I dati e gli allegati inseriti restano in questo browser; non vengono inviati al server. Non caricare documenti riservati in questa demo.</div>
 
         <section className="passport-boat-card" aria-label="Riepilogo imbarcazione dimostrativa">
-          <div className="passport-boat-main"><span className="passport-eyebrow">IMBARCAZIONE DIMOSTRATIVA</span><h2>Demo Boat Orbia</h2><span className="passport-status-chip"><i /> Stato generale: da verificare</span></div>
+          <div className="passport-boat-main"><span className="passport-eyebrow">IMBARCAZIONE DIMOSTRATIVA</span><h2>Yacht dimostrativo OYC</h2><span className="passport-status-chip"><i /> Stato generale: da verificare</span></div>
           <dl className="passport-vessel-specs"><div><dt>Motore</dt><dd>Honda BF135</dd></div><div><dt>Strumentazione</dt><dd>ASE 4.3</dd></div><div><dt>Rete / sensori</dt><dd>NMEA 2000 · 2 sensori carburante analogici</dd></div><div><dt>Area operativa</dt><dd>Olbia / Costa Smeralda</dd></div></dl>
           <div className="passport-kpis"><div><strong>{openCount}</strong><span>Attività aperte</span></div><div><strong>{displayDate(lastUpdated)}</strong><span>Ultimo aggiornamento</span></div><div><strong>{entries.length}</strong><span>Voci in cronologia</span></div></div>
         </section>
@@ -318,7 +318,7 @@ export default function PassportDashboard() {
 
         {reportOpen && report && <div className="passport-modal-backdrop"><section className="passport-report-modal" role="dialog" aria-modal="true" aria-labelledby="passport-report-title"><button className="passport-modal-close" onClick={() => setReportOpen(false)} aria-label="Chiudi rapporto">×</button><span className="passport-eyebrow">OUTPUT BILINGUE</span><h2 id="passport-report-title">Rapporto tecnico demo</h2><p>Le voci chiuse non sono interpretate automaticamente come lavori eseguiti: il rapporto mostra esecuzioni solo se attestate manualmente.</p><div className="passport-report-columns"><pre>{report.it}</pre><pre>{report.en}</pre></div><div className="passport-report-actions"><button className="passport-secondary" onClick={() => void copyReport()}>Copia rapporto</button><button className="passport-primary" onClick={downloadReport}>Scarica TXT bilingue</button></div></section></div>}
 
-        <footer className="passport-footer"><span>Orbia IoT in Community · Passaporto Digitale Refit · prototipo locale</span><Link href="/">Olbia Yachting Community</Link></footer>
+        <footer className="passport-footer"><span>Olbia Yachting Community · Passaporto Digitale Refit · prototipo locale</span><Link href="/">Olbia Yachting Community</Link></footer>
       </div>
     </main>
   );

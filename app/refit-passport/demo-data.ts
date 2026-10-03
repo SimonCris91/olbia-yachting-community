@@ -1,6 +1,6 @@
 import type { PassportEntry } from "./types";
 
-const simulatedSource = "Scenario dimostrativo Orbia — dato simulato, non documento reale";
+const simulatedSource = "Scenario dimostrativo Olbia Yachting Community — dato simulato, non documento reale";
 
 export const demoEntries: PassportEntry[] = [
   { id: "demo-001", date: "2026-09-01", type: "Nota tecnica", title: "Inventario iniziale impianto propulsivo", description: "Scenario demo: motore indicato come Honda BF135. Matricola e ore motore non fornite; da rilevare sul posto.", componentId: "engine", source: simulatedSource, status: "Da verificare", urgency: "Media", internalNotes: "Non associare matricole senza foto targhetta.", demo: true },
