@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "home" | "agenda" | "scan" | "community" | "profile";
@@ -657,7 +658,7 @@ export default function Home() {
   };
 
   if (!authChecked) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Prepariamo il tuo spazio personale</h1><p>Verifico il tuo accesso in sicurezza.</p></div></main>;
-  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small></div></main>;
+  if (!signedIn) return <main className="auth-screen"><div className="auth-card"><img src="/olbia-yachting-brand.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Il tuo spazio nautico personale</h1><p>Accedi per avere agenda, prodotti e richieste separati da quelli degli altri utenti.</p><button onClick={() => { window.location.href = "/signin-with-chatgpt?return_to=/"; }}>Continua con ChatGPT</button><small>Se apri il link da un altro telefono o con un altro account, ciascuno vedra il proprio spazio personale.</small><Link className="auth-passport-link" href="/refit-passport">Apri la demo operativa Passaporto Digitale Refit →</Link></div></main>;
   if (accessPickerOpen) return <main className="auth-screen access-screen"><section className="auth-card access-choice-card"><img src="/yachting-community-logo.png" alt={BRAND_NAME} /><span>{BRAND_NAME.toUpperCase()}</span><h1>Come vuoi accedere?</h1><p>Scegli lo spazio adatto alla tua attivita. Potrai cambiarlo in seguito dal pulsante Accesso.</p><div className="access-choice-grid">{accessOptions.filter((option) => option.id !== "owner" || isOwner).map((option) => <button key={option.id} type="button" onClick={() => void changeAccountType(option.id)}><b>{option.title}</b><span>{option.description}</span><small>{option.features}</small></button>)}</div><a href="/signout-with-chatgpt?return_to=%2F">Esci o cambia account</a></section></main>;
 
   return (
@@ -701,6 +702,7 @@ export default function Home() {
           <span className="eyebrow">{greeting}</span>
           <h1>Cosa serve oggi<br />alla tua barca?</h1>
           <p>Identifica, trova e organizza. {BRAND_NAME} ti accompagna dalla diagnosi al lavoro completato nella zona di {location}.</p>
+          <Link className="passport-entry-link" href="/refit-passport"><span>↗</span> Apri demo operativa · Passaporto Digitale Refit</Link>
         </div>
         <div className="weather"><span>*</span><strong>{currentLocation.weather}</strong><small>{location} - {currentLocation.sea}</small></div>
       </section>

@@ -87,6 +87,15 @@ or enforce explicit server-side membership or allowlist checks.
 Use SIWC for account pages, user-specific dashboards, saved records, and write
 actions tied to the current ChatGPT user. Leave public content anonymous.
 
+## Passaporto Digitale Refit
+
+The Orbia IoT in Community refit-passport prototype is available at
+`/refit-passport`. It is a separate operational demo with a clearly simulated
+boat history, local-only browser storage, deterministic text classification,
+component filters, manual status controls, and an Italian/English report.
+See [`docs/refit-passport.md`](docs/refit-passport.md) for the data model,
+safety boundaries, and how to try it.
+
 ## Useful Commands
 
 - `npm run dev`: start local development
