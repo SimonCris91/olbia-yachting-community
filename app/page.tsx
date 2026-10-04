@@ -279,18 +279,26 @@ export default function Home() {
         setIsOwner(ownerAccess);
         setAccountType(ownerAccess ? validSavedAccess ?? "owner" : profileRole);
         setAccessPickerOpen(!validSavedAccess);
+        const cleanupKey = `yachting-agent-ai-cleanup-v1-${profileUserId}`;
+        const shouldPurgePreviousData = ownerAccess && !localStorage.getItem(cleanupKey);
+        let purgeCompleted = false;
+        if (shouldPurgePreviousData) {
+          const cleanupResponse = await fetch("/api/admin/cleanup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirmation: "PURGE_PREVIOUS_YACHTING_DATA_V1" }) });
+          purgeCompleted = cleanupResponse.ok;
+          if (purgeCompleted) localStorage.setItem(cleanupKey, "true");
+        }
         const workspaceResponse = await fetch("/api/workspace");
         if (workspaceResponse.ok) {
           const workspaceData = await workspaceResponse.json() as { items?: Array<{ id: number; kind: "task" | "purchase" | "job"; title: string; details: string; done: boolean }> };
           const savedItems = workspaceData.items ?? [];
-          setTasks(savedItems.filter((item) => item.kind === "task").map((item) => ({ id: item.id, title: item.title, boat: item.details || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: item.done })));
-          setPurchases(savedItems.filter((item) => item.kind === "purchase").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Da cercare", price: "-", done: item.done })));
-          setJobs(savedItems.filter((item) => item.kind === "job").map((item) => ({ id: item.id, title: item.title, details: item.details || "Dettagli da aggiungere", done: item.done })));
+          setTasks(purgeCompleted ? [] : savedItems.filter((item) => item.kind === "task").map((item) => ({ id: item.id, title: item.title, boat: item.details || "La mia imbarcazione", due: "Da programmare", priority: "Media", done: item.done })));
+          setPurchases(purgeCompleted ? [] : savedItems.filter((item) => item.kind === "purchase").map((item) => ({ id: item.id, title: item.title, detail: item.details || "Da cercare", price: "-", done: item.done })));
+          setJobs(purgeCompleted ? [] : savedItems.filter((item) => item.kind === "job").map((item) => ({ id: item.id, title: item.title, details: item.details || "Dettagli da aggiungere", done: item.done })));
         }
         const response = await fetch(`/api/requests?location=${encodeURIComponent(location)}`);
         if (!response.ok) return;
         const data = await response.json() as { requests?: Array<{ id: number; ownerId: string; title: string; details: string; category: string; location: LocationKey; status: "open" | "accepted" | "closed"; acceptedBy?: string; acceptedByUserId?: string; created?: string }> };
-        setCommunityRequests((data.requests ?? []).map((item) => ({
+        setCommunityRequests(purgeCompleted ? [] : (data.requests ?? []).map((item) => ({
           id: item.id,
           ownerId: item.ownerId === profileUserId ? "me" : item.ownerId,
           title: item.title,
@@ -314,9 +322,9 @@ export default function Home() {
     void loadSavedRequests();
   }, [location]);
 
-  const visibleTasks = useMemo(() => showDemoData ? [...tasks, ...demoTasks] : tasks, [tasks, showDemoData]);
-  const visiblePurchases = useMemo(() => showDemoData ? [...purchases, ...demoPurchases] : purchases, [purchases, showDemoData]);
-  const visibleJobs = useMemo(() => showDemoData ? [...jobs, ...demoJobs] : jobs, [jobs, showDemoData]);
+  const visibleTasks = useMemo(() => showDemoData ? demoTasks : tasks, [tasks, showDemoData]);
+  const visiblePurchases = useMemo(() => showDemoData ? demoPurchases : purchases, [purchases, showDemoData]);
+  const visibleJobs = useMemo(() => showDemoData ? demoJobs : jobs, [jobs, showDemoData]);
   const progress = useMemo(() => visibleTasks.length ? Math.round(visibleTasks.filter((task) => task.done).length / visibleTasks.length * 100) : 0, [visibleTasks]);
   const currentLocation = locationData[location];
   const greeting = useMemo(() => {
@@ -326,7 +334,7 @@ export default function Home() {
     if (hour < 18) return `BUON POMERIGGIO, ${name}`;
     return `BUONA SERA, ${name}`;
   }, [profileName]);
-  const allRequests = useMemo(() => showDemoData ? [...communityRequests, ...demoRequests] : communityRequests, [communityRequests, showDemoData]);
+  const allRequests = useMemo(() => showDemoData ? demoRequests : communityRequests, [communityRequests, showDemoData]);
   const operatorCategories = currentLocation.services.map((service) => service.name);
   const visibleRequests = allRequests.filter((request) => {
     if (accountType === "private") return request.ownerId === "me" || (showDemoData && request.demo === true);
