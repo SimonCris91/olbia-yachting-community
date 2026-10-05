@@ -734,6 +734,7 @@ export default function Home() {
           <button className="access-badge" type="button" onClick={() => setAccessPickerOpen(true)}>Accesso: {accessLabels[accountType]}</button>
           <select className="language-select" value={language} onChange={(event) => setLanguage(event.target.value as Language)} aria-label="Lingua"><option value="it">IT</option><option value="en">EN</option><option value="fr">FR</option><option value="es">ES</option><option value="de">DE</option></select>
           <button className="telegram-switch" type="button" onClick={openTelegramLink}>Telegram</button>
+          {isOwner && <a className="account-switch controller-link" href="/controller">Controller</a>}
           <a className="account-switch" href="/signout-with-chatgpt?return_to=%2F">Cambia account</a>
           <button className="avatar" aria-label="Profilo" onClick={() => goTo("profile")}>{profileName.slice(0, 2).toUpperCase()}</button>
         </div>
