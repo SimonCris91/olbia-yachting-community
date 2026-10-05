@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Yachting Agent AI · Controller locale</title>
+  <style>
+    :root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#102b42;background:#edf5f5;font-synthesis:none}*{box-sizing:border-box}body{margin:0}main{width:min(1080px,calc(100% - 32px));margin:28px auto 60px}.panel{background:#fff;border:1px solid #d5e4e4;border-radius:18px;padding:22px;box-shadow:0 12px 35px #09283b0c;margin:16px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-weight:850;color:#082b46}.brand small{display:block;color:#14869a;font-size:11px;letter-spacing:.12em;margin-top:7px}.status{display:flex;align-items:center;gap:8px;color:#536b7c;font-size:12px}.dot{width:9px;height:9px;background:#d0a538;border-radius:50%}.dot.on{background:#2f9b67}h1{font:500 clamp(32px,5vw,54px)/1 Georgia,serif;color:#092a47;margin:15px 0}h2{font:500 26px Georgia,serif;margin:0 0 14px;color:#0b2c49}.muted{color:#637988;font-size:13px;line-height:1.55}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:grid;gap:7px;margin:12px 0;color:#29556d;font-weight:750;font-size:12px}input,textarea,select{font:inherit;border:1px solid #ccdcdd;border-radius:10px;padding:12px;color:#102b42;background:#fbfdfd}textarea{min-height:110px;resize:vertical}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.button{border:0;border-radius:10px;padding:11px 14px;background:#0a2e4a;color:#fff;font-size:12px;font-weight:800;cursor:pointer}.button.secondary{background:#e8f2f1;color:#123e59}.button.deny{background:#fff1ed;color:#963e2e}.button:disabled{opacity:.45;cursor:not-allowed}.item{padding:12px;border:1px solid #e1ebeb;border-radius:12px;margin:8px 0;background:#fcfefe}.item p{margin:6px 0 0;color:#5c7382;font-size:12px;line-height:1.5;overflow-wrap:anywhere}.event{font:11px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:#345061}.approval{border-color:#e3ca83;background:#fffaf0}.hidden{display:none!important}#login{max-width:470px;margin:12vh auto}#login button{width:100%}#msg{color:#a34d39;font-size:12px;min-height:18px}.notice{padding:11px 13px;background:#eef7f6;border-radius:10px;font-size:12px;color:#315b70}.warning{background:#fff8e8;color:#785c1a}@media(max-width:740px){main{width:min(100% - 22px,580px);margin-top:12px}.grid{grid-template-columns:1fr}.panel{padding:17px}.top{align-items:flex-start}.row .button{flex:1}.event{font-size:10px}}
+  </style>
+</head>
+<body>
+<main>
+  <section id="login" class="panel">
+    <div class="brand">YACHTING AGENT AI<small>CONTROLLER PERSONALE · LOCALE</small></div>
+    <h1>Accedi al cockpit</h1>
+    <p class="muted">Inserisci il codice temporaneo mostrato nel terminale che ha avviato il bridge. Il codice resta su questo computer.</p>
+    <label class="field">Codice di accesso<input id="code" type="password" autocomplete="current-password" required></label>
+    <button id="loginBtn" class="button">Accedi</button><p id="msg"></p>
+  </section>
+  <div id="app" class="hidden">
+    <header class="top panel"><div class="brand">YACHTING AGENT AI<small>COCKPIT CODEX · SESSIONE LOCALE</small></div><div class="status"><i id="dot" class="dot"></i><span id="status">Connessione in corso…</span></div></header>
+    <section class="panel">
+      <p class="muted">Workspace collegato: <strong id="workspace"></strong></p>
+      <div class="notice warning">Le richieste AI vengono addebitate secondo l’autenticazione Codex configurata. Le operazioni partono solo quando premi “Avvia lavoro”. Il checkout inizia in sola lettura.</div>
+    </section>
+    <div class="grid">
+      <section class="panel"><h2>Thread Codex</h2><label class="field">Sessione<select id="threads"></select></label><div class="row"><button id="refresh" class="button secondary">Aggiorna elenco</button><button id="newThread" class="button">Nuovo thread</button></div></section>
+      <section class="panel"><h2>Avvia un lavoro</h2><label class="field">Obiettivo<textarea id="goal" maxlength="4000" placeholder="Descrivi cosa vuoi chiedere a Codex…"></textarea></label><button id="run" class="button">Avvia lavoro</button></section>
+      <section class="panel"><h2>Approvazioni richieste</h2><div id="approvals" class="muted">Nessuna richiesta pendente.</div></section>
+      <section class="panel"><h2>Eventi App Server</h2><div id="events" aria-live="polite"></div></section>
+    </div>
+    <section class="panel"><button id="stop" class="button deny">Arresta App Server</button><span class="muted"> Termina il processo locale e scollega il cockpit.</span></section>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let stream;
+async function api(url,options={}){const response=await fetch(url,{credentials:"same-origin",...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Richiesta non riuscita");return data}
+function event(name,data){const card=document.createElement("article");card.className="item event";card.textContent=name+"\\n"+JSON.stringify(data,null,2);$("events").prepend(card);while($("events").children.length>80)$("events").lastChild.remove()}
+function approval(item){const card=document.createElement("article");card.className="item approval";const title=document.createElement("strong");title.textContent=item.method;card.append(title);const detail=document.createElement("p");detail.textContent=JSON.stringify(item.params,null,2);card.append(detail);for(const [label,decision] of [["Consenti questa volta","accept"],["Nega","decline"],["Interrompi turno","cancel"]]){const button=document.createElement("button");button.className="button "+(decision==="accept"?"":"deny");button.textContent=label;button.onclick=async()=>{if(decision==="accept"&&!confirm("Autorizzi questa singola richiesta del runtime?"))return;try{await api("/api/approvals/"+encodeURIComponent(item.id),{method:"POST",body:JSON.stringify({decision,confirm:decision==="accept"})});card.remove()}catch(e){alert(e.message)}};card.append(button)}$("approvals").prepend(card)}
+async function loadThreads(){const data=await api("/api/threads");const list=data.data||data.threads||[];$("threads").replaceChildren();for(const thread of list){const option=document.createElement("option");option.value=thread.id;option.textContent=(thread.name||thread.preview||thread.id)+" · "+thread.id;$("threads").append(option)}}
+async function initialize(){const status=await api("/api/status");$("workspace").textContent=status.workspace;$("dot").classList.toggle("on",status.connected);$("status").textContent=status.connected?"Codex App Server collegato · sola lettura":"App Server non connesso";await loadThreads();$("login").classList.add("hidden");$("app").classList.remove("hidden");stream=new EventSource("/api/events");for(const name of ["notice","runtime","thread","turn","approval-resolved"]){stream.addEventListener(name,e=>event(name,JSON.parse(e.data)))}stream.addEventListener("approval",e=>approval(JSON.parse(e.data)));stream.addEventListener("snapshot",e=>{const data=JSON.parse(e.data);for(const item of data.approvals||[])approval(item)})}
+$("loginBtn").onclick=async()=>{try{await api("/api/login",{method:"POST",body:JSON.stringify({code:$("code").value})});await initialize()}catch(e){$("msg").textContent=e.message}};
+$("code").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
+$("refresh").onclick=()=>loadThreads().catch(e=>alert(e.message));
+$("newThread").onclick=async()=>{try{const data=await api("/api/threads",{method:"POST",body:"{}"});const thread=data.thread||data;$("threads").add(new Option((thread.name||thread.id)+" · "+thread.id,thread.id));$("threads").value=thread.id;event("thread/started",data)}catch(e){alert(e.message)}};
+$("run").onclick=async()=>{try{const threadId=$("threads").value;if(!threadId)throw new Error("Crea o seleziona un thread");const result=await api("/api/turns",{method:"POST",body:JSON.stringify({threadId,objective:$("goal").value})});event("turn/start",result)}catch(e){alert(e.message)}};
+$("stop").onclick=async()=>{if(!confirm("Arrestare il processo App Server locale?"))return;await api("/api/stop",{method:"POST",body:"{}"});stream?.close();$("app").classList.add("hidden");$("login").classList.remove("hidden");$("msg").textContent="Processo arrestato. Riavvia il bridge dal terminale per riconnetterti."};
+</script>
+</body>
+</html>
